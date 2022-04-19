@@ -1,0 +1,18 @@
+hooks:
+    libc:
+        strlen:
+            - {entry: '0x400550', leave: '0x400554'}
+states:
+    entry:
+        addr: '0x0'
+        regs:
+            r0: ['0x0', '$']
+        mems:
+            '0x1000': ['0x41', '$']
+    leave:
+        addr: '0x0'
+        regs:
+            r0: ['0x0', '$']
+        mems:
+            '0x1000': ['0x41', '$']
+trace:
