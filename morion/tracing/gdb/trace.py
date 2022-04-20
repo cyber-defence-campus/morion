@@ -248,7 +248,7 @@ class GdbTracer:
                     # Store register value on first access
                     if reg_name not in self._accessed_regs:
                         self._accessed_regs[reg_name] = reg_value
-                        self._recorder.add_register(reg_name, reg_value, True)
+                        self._recorder.add_register(reg_name, reg_value, is_entry=True)
                         logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
                     # Set register value in context
                     mctx.setConcreteRegisterValue(reg, reg_value)
@@ -281,13 +281,24 @@ class GdbTracer:
                         if mem_addr+i not in self._accessed_mems:
                             mem_value = self.__get_memory_value(mem_addr+i, CPUSIZE.BYTE)
                             self._accessed_mems[mem_addr+i] = mem_value
-                            self._recorder.add_memory(mem_addr+i, mem_value, True)
+                            self._recorder.add_memory(mem_addr+i, mem_value, is_entry=True)
                             logger.debug(f"\t0x{mem_addr+i:x} = 0x{mem_value:02x}")
                     except Exception as exc:
                         logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:x}: '{str(exc):s}'")
             
             # Step over instruction
             gdb.execute("stepi")
+
+        # Store accessed registers at leave
+        for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+            reg_value = self.__get_register_value(reg_name)
+            self._recorder.add_register(reg_name, reg_value, is_entry=False)
+
+        # Store accessed memory at leave
+        for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
+            mem_addr = int(mem_addr, base=16)
+            mem_value = self.__get_memory_value(mem_addr, CPUSIZE.BYTE)
+            self._recorder.add_memory(mem_addr, mem_value, is_entry=False)
 
         self._recorder.add_address(pc, False)
         self._stop_addrs.clear()
