@@ -20,25 +20,28 @@ states:
       '0xbefffb87': ['0xb6']
     regs:
       r0: ['0x00412190']
-      r1: ['0xbefffce4']
       r11: ['0xbefffb84']
       r3: ['0x00412198']
       sp: ['0xbefffb78']
       z: ['0x00000000']
   leave:
     addr: '0xb6ef0a20'
-    mems:
-      '0x1000': ['0x41', $]
-    regs:
-      r0: ['0x0', $]
+    mems: {}
+    regs: {}
 trace:
-- ['0x00400554', 0030a0e1, 'mov r3, r0']
-- ['0x00400558', 08300be5, 'str r3, [fp, #-8]']
-- ['0x0040055c', 08001be5, 'ldr r0, [fp, #-8]']
-- ['0x00400564', 0030a0e1, 'mov r3, r0']
-- ['0x00400568', 020053e3, 'cmp r3, #2']
-- ['0x0040056c', 0100001a, 'bne #0x400578']
-- ['0x00400578', 0030a0e3, 'mov r3, #0']
-- ['0x0040057c', 0300a0e1, 'mov r0, r3']
-- ['0x00400580', 04d04be2, 'sub sp, fp, #4']
-- ['0x00400584', 0088bde8, 'pop {fp, pc}']
+- ['0x00400554', 0030a0e1, 'mov r3, r0', '']
+- ['0x00400558', 08300be5, 'str r3, [fp, #-8]', '']
+- ['0x0040055c', 08001be5, 'ldr r0, [fp, #-8]', '']
+- ['0x00400560', 01faa0e3, 'mov pc, 0x1000', 'libc:strlen (on_concex_entry)']
+- ['0x00001000', 0000a0e3, 'mov  r0, #0x0', 'libc:strlen (on_concex_leave)']
+- ['0x00001004', 000040e3, 'movt r0, #0x0', 'libc:strlen (on_concex_leave)']
+- ['0x00001008', 642500e3, 'mov  r2, #0x564', 'libc:strlen (on_concex_leave)']
+- ['0x0000100c', 402040e3, 'movt r2, #0x40', 'libc:strlen (on_concex_leave)']
+- ['0x00001010', 02f0a0e1, 'mov pc, r2', 'libc:strlen (on_concex_leave)']
+- ['0x00400564', 0030a0e1, 'mov r3, r0', '']
+- ['0x00400568', 020053e3, 'cmp r3, #2', '']
+- ['0x0040056c', 0100001a, 'bne #0x400578', '']
+- ['0x00400578', 0030a0e3, 'mov r3, #0', '']
+- ['0x0040057c', 0300a0e1, 'mov r0, r3', '']
+- ['0x00400580', 04d04be2, 'sub sp, fp, #4', '']
+- ['0x00400584', 0088bde8, 'pop {fp, pc}', '']

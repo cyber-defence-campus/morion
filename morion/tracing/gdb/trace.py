@@ -7,10 +7,10 @@ import os
 import pkgutil
 import re
 import sys
-from   morion        import simulation
-from   morion.log    import Logger
-from   morion.record import Recorder
-from   triton        import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction, MODE, OPERAND, TritonContext
+from   morion.log         import Logger
+from   morion.record      import Recorder
+from   morion.tracing.gdb import hooking
+from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction, MODE, OPERAND, TritonContext
 
 
 logger = Logger()
@@ -50,6 +50,17 @@ class GdbHelper:
         # Transfor bytes to unsigned integer respecting endianess
         mem_value = bytes.fromhex(''.join(match.groups()[1:mem_size+1]))
         return int.from_bytes(mem_value, byteorder=GdbHelper.get_byteorder(), signed=False)
+
+    @staticmethod
+    def get_memory_string(addr: int) -> str:
+        # Examine string at address `addr`
+        memory_string = gdb.execute(f"x/s {addr:d}", to_string=True)
+        # Parse string
+        pattern = r"^0x[0-9a-f]+[^:]*:[^\"]*\"([^\"]*)\".*$"
+        match = re.match(pattern, memory_string)
+        if match is not None:
+            return match.group(1)
+        return ''
 
     @staticmethod
     def get_instruction() -> (int, bytes):
@@ -207,7 +218,11 @@ class GdbTracer:
 
             # Execute hook functions
             for hook_fun in hook_funs:
-                pass
+                hook_name = f"{hook_fun.__self__.name:s} ({hook_fun.__name__:s})"
+                logger.info(f"Start hooking function '{hook_name:s}'...", color="blue")
+                for addr, opcode, disassembly, comment in hook_fun():
+                    self._recorder.add_instruction(addr, opcode, disassembly, comment)
+                logger.info(f"... finished hooking function '{hook_name:s}'.", color="blue")
 
             # Skip until return address
             if hook_reta is not None:
@@ -298,44 +313,44 @@ class GdbTracer:
                         logger.warning(f"Failed to hook {lib:s}.{fun:s}.")
                         continue
                     # Register corresponding hook functions
-                    for _, m_name, _ in pkgutil.iter_modules([os.path.dirname(simulation.__file__)]):
+                    for _, m_name, _ in pkgutil.iter_modules([os.path.dirname(hooking.__file__)]):
                         if m_name != lib: continue
-                        module = importlib.import_module(f"morion.simulation.{m_name:s}")
+                        module = importlib.import_module(f"morion.tracing.gdb.hooking.{m_name:s}")
                         classes = inspect.getmembers(module, predicate=inspect.isclass)
                         for c_name, c in classes:
                             if c_name != fun: continue
-                            functions = inspect.getmembers(c, predicate=inspect.isfunction)
-                            for f_name, f in functions:
-                                if f_name == "on_concex_entry":
-                                    _addr_map = self._addr_map.get(entry, {})
-                                    _symbols = _addr_map.get("symbols", [])
-                                    _symbol = f"{lib:s}.{fun:s} (entry)"
-                                    _symbols.append(_symbol)
-                                    _hooks = _addr_map.get("hooks", {})
-                                    _funs = _hooks.get("funs", [])
-                                    _funs.append(f)
-                                    _hooks["funs"] = _funs
-                                    _hooks["return_addr"] = leave
-                                    _addr_map["hooks"] = _hooks
-                                    _addr_map["symbols"] = _symbols
-                                    self._addr_map[entry] = _addr_map
-                                    logger.debug(f"Hook: 0x{entry:x} {_symbol:s}")
-                                elif f_name == "on_concex_leave":
-                                    _addr_map = self._addr_map.get(leave, {})
-                                    _symbols = _addr_map.get("symbols", [])
-                                    _symbol = f"{lib:s}.{fun:s} (leave)"
-                                    _symbols.append(_symbol)
-                                    _hooks = _addr_map.get("hooks", {})
-                                    _funs = _hooks.get("funs", [])
-                                    _funs.append(f)
-                                    _hooks["funs"] = _funs
-                                    _hooks["return_addr"] = None
-                                    _addr_map["hooks"] = _hooks
-                                    _addr_map["symbols"] = _symbols
-                                    self._addr_map[leave] = _addr_map
-                                    logger.debug(f"Hook: 0x{leave:x} {_symbol:s}")
-                                else:
-                                    continue
+
+                            # Instantiate class
+                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, logger)
+
+                            # Register hook at entry address
+                            _addr_map = self._addr_map.get(ci.entry_addr, {})
+                            _symbol = f"{ci.name:s} (entry)"
+                            _symbols = _addr_map.get("symbols", [])
+                            _symbols.append(_symbol)
+                            _hooks = _addr_map.get("hooks", {})
+                            _funs = _hooks.get("funs", [])
+                            _funs.append(ci.on_concex_entry)
+                            _hooks["funs"] = _funs
+                            _hooks["return_addr"] = ci.leave_addr
+                            _addr_map["hooks"] = _hooks
+                            _addr_map["symbols"] = _symbols
+                            self._addr_map[ci.entry_addr] = _addr_map
+
+                            # Register hook at leave address
+                            _addr_map = self._addr_map.get(ci.leave_addr, {})
+                            _symbol = f"{ci.name:s} (leave)"
+                            _symbols = _addr_map.get("symbols", [])
+                            _symbols.append(_symbol)
+                            _hooks = _addr_map.get("hooks", {})
+                            _funs = _hooks.get("funs", [])
+                            _funs.append(ci.on_concex_leave)
+                            _hooks["funs"] = _funs
+                            _hooks["return_addr"] = None
+                            _addr_map["hooks"] = _hooks
+                            _addr_map["symbols"] = _symbols
+                            self._addr_map[ci.leave_addr] = _addr_map
+                            
         return True
 
     def store_trace_file(self, trace_file: str) -> bool:

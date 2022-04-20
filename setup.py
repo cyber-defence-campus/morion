@@ -6,7 +6,7 @@ setup(
     packages = find_packages(include = ['morion', 'morion.*']),
     install_requires = [
         'termcolor==1.1.0',
-##        'keystone-engine==0.9.2',
+        'keystone-engine==0.9.2',
 ##        'PyYAML==6.0',
 ##        'ipython==8.1.1'
     ],
