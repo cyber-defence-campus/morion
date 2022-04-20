@@ -52,9 +52,12 @@ source venvs/morion/bin/activate
 ```shell
 (concolex) pip install .
 ```
-4. Tracing with GDB (or GDB-Multiarch):
+## Usage
+### Tracing
+Tracing with GDB (or GDB-Multiarch):
 ```shell
 gdb -q -x morion/tracing/gdb/trace.py
 (gdb) trace         # Show usage
 (gdb) help target   # Attach to target binary
 ```
+### Symbolic Execution
