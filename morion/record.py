@@ -92,12 +92,18 @@ class Recorder:
 
     def add_register(self, reg_name: str, reg_value: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
+        reg = self._trace["states"][state]["regs"].get(reg_name, [])
         self._trace["states"][state]["regs"][reg_name] = [f"0x{reg_value:08x}"]
+        if '$' in reg:
+            self._trace["states"][state]["regs"][reg_name].append('$')
         return
 
     def add_memory(self, mem_addr: int, mem_value: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
+        mem = self._trace["states"][state]["mems"].get(f"0x{mem_addr:08x}", [])
         self._trace["states"][state]["mems"][f"0x{mem_addr:08x}"] = [f"0x{mem_value:02x}"]
+        if '$' in mem:
+            self._trace["states"][state]["mems"][f"0x{mem_addr:08x}"].append('$')
         return
 
     def add_instruction(self, inst_addr: int, inst_opcode: bytes, inst_disassembly: str, inst_comment: str = "") -> None:
