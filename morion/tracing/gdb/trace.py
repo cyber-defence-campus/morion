@@ -81,11 +81,17 @@ class GdbHelper:
         return ''
 
     @staticmethod
-    def get_instruction() -> (int, bytes):
+    def get_instruction() -> (int, bytes, str):
         pc = GdbHelper.get_register_value("pc")
         opcode = GdbHelper.get_memory_value(pc)
         opcode = opcode.to_bytes((opcode.bit_length() + 7) // 8, byteorder=GdbHelper.get_byteorder())
-        return pc, opcode
+        try:
+            source = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True).splitlines()[1]
+            match = re.match(r"^([0-9]+)\t\s*(.*)$", source)
+            source = f"{match.group(2):s} // Line: {match.group(1)}"
+        except Exception as e:
+            source = ""
+        return pc, opcode, source
 
 
 class GdbTraceCommand(gdb.Command):
@@ -223,7 +229,7 @@ class GdbTracer:
 
         while True:
             # Create instruction
-            pc, opcode = GdbHelper.get_instruction()
+            pc, opcode, source = GdbHelper.get_instruction()
             inst = Instruction(pc, opcode)
 
             # Stop condition
@@ -240,7 +246,7 @@ class GdbTracer:
             for hook_fun in hook_funs:
                 logger.debug(f"Hook: 0x{pc:x} '{hook_symb:s}'")
                 for addr, opcode, disassembly, comment in hook_fun():
-                    self._recorder.add_instruction(addr, opcode, disassembly, comment)
+                    self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
 
             # Skip until return address
             if hook_reta is not None:
@@ -254,7 +260,7 @@ class GdbTracer:
 
             # Process instruction  (fresh context)
             if not self.__process(inst, rctx): break
-            self._recorder.add_instruction(inst.getAddress(), inst.getOpcode(), inst.getDisassembly())
+            self._recorder.add_instruction(inst.getAddress(), inst.getOpcode(), inst.getDisassembly(), source)
 
             # Identify accessed registers
             logger.debug("Regs:")
