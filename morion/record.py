@@ -11,6 +11,10 @@ class Recorder:
     def __init__(self, logger: Logger = Logger()) -> None:
         self._logger = logger
         self._trace = {
+            "info": {
+            #    "arch": "armv7",
+            #    "thumb": False
+            },
             "hooks": {
             #    "lib": {
             #        "fun": [
@@ -51,6 +55,9 @@ class Recorder:
                 self._trace = yaml.safe_load(f)
         except:
             self._trace = {}
+        info = self._trace.get("info", {})
+        if info is None: info = {}
+        self._trace["info"] = info
         hooks = self._trace.get("hooks", {})
         if hooks is None: hooks = {}
         self._trace["hooks"] = hooks
@@ -75,7 +82,9 @@ class Recorder:
         leave_state["mems"] = mems
         states["leave"] = leave_state
         self._trace["states"] = states
-        self._trace["trace"] = []
+        trace = self._trace.get("trace", [])
+        if trace is None: trace = []
+        self._trace["trace"] = trace
         return True
 
     def store(self, trace_file: str) -> bool:
@@ -85,6 +94,11 @@ class Recorder:
         except:
             return False
         return True
+
+    def add_info(self, **kwargs) -> None:
+        for key, value in kwargs.items():
+            self._trace["info"][key] = value
+        return
 
     def add_address(self, addr: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
