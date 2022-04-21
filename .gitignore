@@ -9,6 +9,3 @@ venvs/
 
 # Jupyter Notebooks
 .ipynb_checkpoints
-
-# Binary files
-**/bin/*
