@@ -2,6 +2,7 @@ hooks:
   libc:
     strlen:
     - {entry: '0x400560', leave: '0x400564'}
+info: {arch: armv7, thumb: false}
 states:
   entry:
     addr: '0x00400554'
