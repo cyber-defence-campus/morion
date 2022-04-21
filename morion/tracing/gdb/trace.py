@@ -174,12 +174,20 @@ class GdbTracer:
             ctx.setArchitecture(ARCH.ARM32)
             ctx.setThumb(GdbHelper.get_thumb_state())
         else:
-            logger.critical(f"Architecture {arch:s} not supported.")
+            logger.critical(f"Architecture '{arch:s}' not supported.")
             sys.exit("Unsupported architecture.")
         return ctx
+
+    def __get_architecture(self) -> str:
+        arch = GdbHelper.get_architecture()
+        if not arch in ["armv6", "armv7"]:
+            logger.critical(f"Architecture '{arch:s}' not supported.")
+            sys.exit("Unsupported architecture.")
+        return arch
     
     def __get_register_value(self, reg_name: str) -> int:
-        arch = GdbHelper.get_architecture()
+        reg_value = 0x0
+        arch = self.__get_architecture()
         if arch in ["armv6", "armv7"]:
             # CPSR negative flag
             if reg_name == 'n':
@@ -200,9 +208,6 @@ class GdbTracer:
             # General purpose registers
             else:
                 reg_value = GdbHelper.get_register_value(reg_name)
-        else:
-            logger.critical(f"Architecture {arch:s} not supported.")
-            sys.exit("Unsupported architecture.")
         return reg_value
 
     def __get_memory_value(self, mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
@@ -225,6 +230,14 @@ class GdbTracer:
     
     def run(self) -> bool:
         logger.info("Start tracing...")
+        # Store architecture information
+        info = {
+            "arch": self.__get_architecture()
+        }
+        if info["arch"] in ["armv6", "armv7"]:
+            info["thumb"] = GdbHelper.get_thumb_state()
+        self._recorder.add_info(**info)
+        
         # Store initial program counter value
         pc = self.__get_register_value("pc")
         self._accessed_regs["pc"] = pc
@@ -337,6 +350,8 @@ class GdbTracer:
         logger.info(f"Start loading trace file '{trace_file:s}'...")
         if not self._recorder.load(trace_file):
             return False
+        # Set empty trace
+        self._recorder._trace["trace"] = []
         # Set register values
         logger.debug("Regs:")
         for reg_name, reg_values in self._recorder._trace["states"]["entry"]["regs"].items():
