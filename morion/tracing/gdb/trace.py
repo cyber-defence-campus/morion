@@ -41,6 +41,15 @@ class GdbHelper:
         return int(value.cast(gdb.lookup_type('unsigned int')))
 
     @staticmethod
+    def set_register_value(reg_name: str, reg_value: int) -> bool:
+        try:
+            gdb.parse_and_eval(f"${reg_name:s} = {reg_value:d}")
+        except Exception as e:
+            logger.warning(f"Failed to set register '{reg_name:s}': {str(e):s}")
+            return False
+        return True
+
+    @staticmethod
     def get_memory_value(mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
         # Examine `mem_size` bytes at address `mem_addr`
         memory = gdb.execute(f"x/{mem_size:d}xb {mem_addr:d}", to_string=True)
@@ -50,6 +59,15 @@ class GdbHelper:
         # Transfor bytes to unsigned integer respecting endianess
         mem_value = bytes.fromhex(''.join(match.groups()[1:mem_size+1]))
         return int.from_bytes(mem_value, byteorder=GdbHelper.get_byteorder(), signed=False)
+
+    @staticmethod
+    def set_memory_value(mem_addr: int, mem_value: int) -> bool:
+        try:
+            gdb.parse_and_eval(f"{{unsigned char}} 0x{mem_addr:x} = 0x{mem_value:x}")
+        except Exception as e:
+            logger.warning(f"Failed to set memory at address '0x{mem_addr:x}': {str(e):s}")
+            return False
+        return True
 
     @staticmethod
     def get_memory_string(addr: int) -> str:
@@ -197,6 +215,7 @@ class GdbTracer:
         return supported
     
     def run(self) -> bool:
+        logger.info("Start tracing...")
         # Store initial program counter value
         pc = self.__get_register_value("pc")
         self._accessed_regs["pc"] = pc
@@ -214,15 +233,14 @@ class GdbTracer:
             hooks = self._addr_map.get(pc, {}).get("hooks", {})
             hook_funs = hooks.get("funs", [])
             hook_reta = hooks.get("return_addr", None)
-            hook_symb = ", ".join(s for s in hooks.get("symbols", []) if s)
+            symbols = self._addr_map.get(pc, {}).get("symbols", [])
+            hook_symb = ", ".join(symbol for symbol in symbols if symbol)
 
             # Execute hook functions
             for hook_fun in hook_funs:
-                hook_name = f"{hook_fun.__self__.name:s} ({hook_fun.__name__:s})"
-                logger.info(f"Start hooking function '{hook_name:s}'...", color="blue")
+                logger.debug(f"Hook: 0x{pc:x} '{hook_symb:s}'")
                 for addr, opcode, disassembly, comment in hook_fun():
                     self._recorder.add_instruction(addr, opcode, disassembly, comment)
-                logger.info(f"... finished hooking function '{hook_name:s}'.", color="blue")
 
             # Skip until return address
             if hook_reta is not None:
@@ -302,15 +320,38 @@ class GdbTracer:
 
         self._recorder.add_address(pc, False)
         self._stop_addrs.clear()
+        logger.info("... finished tracing.")
         return True
 
     def load_trace_file(self, trace_file: str) -> bool:
         # Load file
+        logger.info(f"Start loading trace file '{trace_file:s}'...")
         if not self._recorder.load(trace_file):
             return False
-        # Register hooks
+        # Set register values
+        logger.debug("Regs:")
+        for reg_name, reg_values in self._recorder._trace["states"]["entry"]["regs"].items():
+            for reg_value in reg_values:
+                try:
+                    reg_value = int(reg_value, base=16)
+                    GdbHelper.set_register_value(reg_name, reg_value)
+                    logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
+                except:
+                    pass
+        # Set memory values
+        logger.debug("Mems:")
+        for mem_addr, mem_values in self._recorder._trace["states"]["entry"]["mems"].items():
+            for mem_value in mem_values:
+                try:
+                    mem_addr = int(mem_addr, base=16)
+                    mem_value = int(mem_value, base=16)
+                    GdbHelper.set_memory_value(mem_addr, mem_value)
+                    logger.debug(f"\t0x{mem_addr:x} = 0x{mem_value:x}")
+                except:
+                    pass
+        # Set hooks
+        logger.debug("Hooks:")
         hooks = self._recorder._trace.get("hooks", {})
-        if hooks is None: hooks = {}
         for lib, funs in hooks.items():
             if funs is None: funs = {}
             for fun, addrs in funs.items():
@@ -321,7 +362,7 @@ class GdbTracer:
                         entry = int(addr["entry"], base=16)
                         leave = int(addr["leave"], base=16)
                     except:
-                        logger.warning(f"Failed to hook {lib:s}.{fun:s}.")
+                        logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
                     # Register corresponding hook functions
                     for _, m_name, _ in pkgutil.iter_modules([os.path.dirname(hooking.__file__)]):
@@ -347,6 +388,7 @@ class GdbTracer:
                             _addr_map["hooks"] = _hooks
                             _addr_map["symbols"] = _symbols
                             self._addr_map[ci.entry_addr] = _addr_map
+                            logger.debug(f"\t0x{ci.entry_addr:x} '{ci.name:s} (entry)'")
 
                             # Register hook at leave address
                             _addr_map = self._addr_map.get(ci.leave_addr, {})
@@ -361,11 +403,15 @@ class GdbTracer:
                             _addr_map["hooks"] = _hooks
                             _addr_map["symbols"] = _symbols
                             self._addr_map[ci.leave_addr] = _addr_map
-                            
+                            logger.debug(f"\t0x{ci.leave_addr:x} '{ci.name:s} (leave)'")
+        logger.info(f"... finished loading trace file '{trace_file:s}'.")
         return True
 
     def store_trace_file(self, trace_file: str) -> bool:
-        return self._recorder.store(trace_file)
+        logger.info(f"Start storing trace file '{trace_file:s}'...")
+        result = self._recorder.store(trace_file)
+        logger.info(f"... finished storing trace file '{trace_file:s}'.")
+        return result
 
     def add_stop_addrs(self, addrs: list) -> int:
         self._stop_addrs.extend(addrs)
