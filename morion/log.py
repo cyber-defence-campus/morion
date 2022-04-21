@@ -39,7 +39,7 @@ class Logger:
         if self.level <= 0:
             self._print('DEBG', msg, color, on_color=on_color, attrs=attrs, file=sys.stdout)
 
-    def info(self, msg: str, color: str = 'white', on_color: str = None,
+    def info(self, msg: str, color: str = 'blue', on_color: str = None,
              attrs: List[str] = []) -> None:
         if self.level <= 1:
             self._print('INFO', msg, color, on_color=on_color, attrs=attrs, file=sys.stdout)
