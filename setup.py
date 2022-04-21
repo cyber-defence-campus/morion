@@ -11,6 +11,6 @@ setup(
 ##        'ipython==8.1.1'
     ],
     entry_points = {
-##        'console_scripts': ['concolex=concolex.dbg:main']
+        'console_scripts': ['morion=morion.symbex.symbex:main']
     }
 )
