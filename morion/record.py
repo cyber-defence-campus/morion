@@ -110,6 +110,6 @@ class Recorder:
         inst_addr = f"0x{inst_addr:08x}"
         inst_opcode = inst_opcode.hex()
         self._trace["trace"].append([inst_addr, inst_opcode, inst_disassembly, inst_comment])
-        self._logger.info(f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}")
+        self._logger.info(f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}", color="cyan")
         return
 
