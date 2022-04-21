@@ -18,6 +18,7 @@ logger = Logger()
 
 class GdbHelper:
     """
+    Helper functions to interact with GDB.
     """
     @staticmethod
     def get_byteorder() -> str:
@@ -96,6 +97,7 @@ class GdbHelper:
 
 class GdbTraceCommand(gdb.Command):
     """
+    GDB command to trace (part of) a binary's execution.
     """
     def __init__(self, name: str) -> None:
         super().__init__(name, gdb.COMMAND_OBSCURE)
@@ -145,6 +147,7 @@ class GdbTraceCommand(gdb.Command):
 
 class GdbTracer:
     """
+    Trace (part of) a binary's execution.
     """
     def __init__(self) -> None:
         self._stop_addrs = []

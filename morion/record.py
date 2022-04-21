@@ -6,6 +6,7 @@ from   morion.log import Logger
 
 class Recorder:
     """
+    Read/write recorded information from/to YAML files.
     """
     def __init__(self, logger: Logger = Logger()) -> None:
         self._logger = logger
