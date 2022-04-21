@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from morion.log                 import Logger
-from morion.tracing.gdb.hooking import SimulationFunction
-from morion.tracing.gdb.trace   import GdbHelper
-from typing                     import List, Tuple
+from morion.log                     import Logger
+from morion.tracing.gdb.hooking.lib import SimulationFunction
+from morion.tracing.gdb.trace       import GdbHelper
+from typing                         import List, Tuple
 
 
 class strlen(SimulationFunction):
