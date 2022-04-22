@@ -2,6 +2,7 @@
 ## -*- coding: utf-8 -*-
 import yaml
 from   morion.log import Logger
+from   typing     import List, Tuple
 
 
 class Recorder:
@@ -10,6 +11,7 @@ class Recorder:
     """
     def __init__(self, logger: Logger = Logger()) -> None:
         self._logger = logger
+        # TODO: _trace --> __trace
         self._trace = {
             "info": {
             #    "arch": "armv7",
@@ -43,7 +45,7 @@ class Recorder:
                 }
             },
             "trace": [
-                # ["0x0", "00", "inst"]
+                # ["0x0", 00, "inst", "comment"]
             ]
         }
         return
@@ -124,7 +126,11 @@ class Recorder:
     def add_instruction(self, inst_addr: int, inst_opcode: bytes, inst_disassembly: str, inst_comment: str = "") -> None:
         inst_addr = f"0x{inst_addr:08x}"
         inst_opcode = inst_opcode.hex()
+        inst_opcode = ' '.join(a+b for a, b in zip(inst_opcode[::2], inst_opcode[1::2]))
         self._trace["trace"].append([inst_addr, inst_opcode, inst_disassembly, inst_comment])
         self._logger.info(f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}", color="cyan")
         return
+
+    def get_trace(self) -> List[Tuple[str, str, str, str]]:
+        return self._trace["trace"]
 
