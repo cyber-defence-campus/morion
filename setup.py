@@ -11,6 +11,13 @@ setup(
 ##        'ipython==8.1.1'
     ],
     entry_points = {
-        'console_scripts': ['morion=morion.symbex.symbex:main']
+        'console_scripts': [
+            'morion=morion.symbex.executor:main',
+##            'morion_backward_slicer=',
+            'morion_control_hijacker=morion.symbex.control_hijacker:main',
+##            'morion_memory_hijacker=',
+##            'morion_branch_analyzer=',
+##            'morion_path_analyzer='
+        ]
     }
 )
