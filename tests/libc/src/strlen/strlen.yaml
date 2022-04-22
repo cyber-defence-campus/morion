@@ -2,7 +2,7 @@ hooks:
   libc:
     strlen:
     - {entry: '0x400560', leave: '0x400564'}
-info: {arch: armv7, thumb: false}
+info: {arch: armv7, endianess: little, thumb: false}
 states:
   entry:
     addr: '0x00400554'
@@ -29,6 +29,7 @@ states:
       '0xbefffb87': ['0xb6']
     regs:
       r0: ['0x00412190']
+      r2: ['$']
       r11: ['0xbefffb84']
       r3: ['0x00412198']
       sp: ['0xbefffb78']
@@ -58,26 +59,28 @@ states:
       '0xbefffb87': ['0xb6']
     regs:
       r0: ['0x00000000']
+      r4: ['$']
       r11: ['0x00000000']
       r3: ['0x00000000']
       sp: ['0xbefffb88']
       z: ['0x00000000']
 trace:
-- ['0x00400554', 0030a0e1, 'mov r3, r0', 's = (char *) calloc(BUF_LENGTH, sizeof(char));
+- ['0x00400554', 00 30 a0 e1, 'mov r3, r0', 's = (char *) calloc(BUF_LENGTH, sizeof(char));
     // Line: 10']
-- ['0x00400558', 08300be5, 'str r3, [fp, #-8]', 's = (char *) calloc(BUF_LENGTH, sizeof(char));
-    // Line: 10']
-- ['0x0040055c', 08001be5, 'ldr r0, [fp, #-8]', 'if(strlen(s) == 2) { // Line: 13']
-- ['0x00400560', 01faa0e3, 'mov pc, 0x1000', '// Hook: libc:strlen (on_concex_entry)']
-- ['0x00001000', 0700a0e3, 'mov  r0, #0x7', '// Hook: libc:strlen (on_concex_leave)']
-- ['0x00001004', 000040e3, 'movt r0, #0x0', '// Hook: libc:strlen (on_concex_leave)']
-- ['0x00001008', 642500e3, 'mov  r2, #0x564', '// Hook: libc:strlen (on_concex_leave)']
-- ['0x0000100c', 402040e3, 'movt r2, #0x40', '// Hook: libc:strlen (on_concex_leave)']
-- ['0x00001010', 02f0a0e1, 'mov pc, r2', '// Hook: libc:strlen (on_concex_leave)']
-- ['0x00400564', 0030a0e1, 'mov r3, r0', 'if(strlen(s) == 2) { // Line: 13']
-- ['0x00400568', 020053e3, 'cmp r3, #2', 'if(strlen(s) == 2) { // Line: 13']
-- ['0x0040056c', 0100001a, 'bne #0x400578', 'if(strlen(s) == 2) { // Line: 13']
-- ['0x00400578', 0030a0e3, 'mov r3, #0', 'return 0; // Line: 16']
-- ['0x0040057c', 0300a0e1, 'mov r0, r3', '} // Line: 17']
-- ['0x00400580', 04d04be2, 'sub sp, fp, #4', '} // Line: 17']
-- ['0x00400584', 0088bde8, 'pop {fp, pc}', '} // Line: 17']
+- ['0x00400558', 08 30 0b e5, 'str r3, [fp, #-8]', 's = (char *) calloc(BUF_LENGTH,
+    sizeof(char)); // Line: 10']
+- ['0x0040055c', 08 00 1b e5, 'ldr r0, [fp, #-8]', 'if(strlen(s) == 2) { // Line:
+    13']
+- ['0x00400560', 01 fa a0 e3, 'mov pc, 0x1000', '// Hook: libc:strlen (on_concex_entry)']
+- ['0x00001000', 07 00 a0 e3, 'mov  r0, #0x7', '// Hook: libc:strlen (on_concex_leave)']
+- ['0x00001004', 00 00 40 e3, 'movt r0, #0x0', '// Hook: libc:strlen (on_concex_leave)']
+- ['0x00001008', 64 25 00 e3, 'mov  r2, #0x564', '// Hook: libc:strlen (on_concex_leave)']
+- ['0x0000100c', 40 20 40 e3, 'movt r2, #0x40', '// Hook: libc:strlen (on_concex_leave)']
+- ['0x00001010', 02 f0 a0 e1, 'mov pc, r2', '// Hook: libc:strlen (on_concex_leave)']
+- ['0x00400564', 00 30 a0 e1, 'mov r3, r0', 'if(strlen(s) == 2) { // Line: 13']
+- ['0x00400568', 02 00 53 e3, 'cmp r3, #2', 'if(strlen(s) == 2) { // Line: 13']
+- ['0x0040056c', 01 00 00 1a, 'bne #0x400578', 'if(strlen(s) == 2) { // Line: 13']
+- ['0x00400578', 00 30 a0 e3, 'mov r3, #0', 'return 0; // Line: 16']
+- ['0x0040057c', 03 00 a0 e1, 'mov r0, r3', '} // Line: 17']
+- ['0x00400580', 04 d0 4b e2, 'sub sp, fp, #4', '} // Line: 17']
+- ['0x00400584', 00 88 bd e8, 'pop {fp, pc}', '} // Line: 17']
