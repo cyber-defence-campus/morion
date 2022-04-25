@@ -1,6 +1,6 @@
 import argparse
-from   morion.log             import Logger
-from   morion.symbex.executor import Executor
+from   morion.log            import Logger
+from   morion.symbex.execute import Executor
 
 
 class ControlHijacker(Executor):

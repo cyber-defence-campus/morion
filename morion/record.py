@@ -3,7 +3,7 @@
 import yaml
 from   morion.log import Logger
 from   typing     import List, Tuple
-
+    
 
 class Recorder:
     """
@@ -133,4 +133,3 @@ class Recorder:
 
     def get_trace(self) -> List[Tuple[str, str, str, str]]:
         return self._trace["trace"]
-
