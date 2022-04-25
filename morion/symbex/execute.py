@@ -191,7 +191,7 @@ class Executor:
 
             # Log instruction
             line = [f"0x{inst.getAddress():08x} {inst.getDisassembly():s}", comment]
-            self._logger.debug("".join(item.ljust(36) for item in line))
+            self._logger.debug("".join(item.ljust(36) for item in line), color="cyan")
 
             # Post-process instruction
             for post_processing_function in self._post_processing_functions:
@@ -221,11 +221,11 @@ class Executor:
                 hook_symbols = self._addr_mapper.get_symbols(addr)
                 hook_symbols = ", ".join(s for s in hook_symbols if s)
                 if hook_return_addr is not None:
-                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'", color="yellow")
-                    self._logger.debug(f"---       '{hook_fun.__self__.synopsis:s}'", color="yellow")
+                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
+                    self._logger.debug(f"---       '{hook_fun.__self__.synopsis:s}'")
                 hook_fun(self.ctx)
                 if hook_return_addr is None:
-                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'", color="yellow")
+                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
 
             # Symbolic execution
             if not self._step(addr, opcode, disassembly, comment):

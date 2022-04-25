@@ -17,7 +17,7 @@ class strlen(FunctionHook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._logger.debug(f"s=0x{self.s:x}", color="yellow")
+                self._logger.debug(f"s=0x{self.s:x}")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -30,7 +30,7 @@ class strlen(FunctionHook):
             if arch == ARCH.ARM32:
                 # Concrete result
                 length = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._logger.debug(f"ret={length:d}", color="yellow")
+                self._logger.debug(f"ret={length:d}")
                 # Symbolic result
                 ast = ctx.getAstContext()
                 ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
