@@ -130,5 +130,14 @@ class Recorder:
         self._logger.info(f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}", color="cyan")
         return
 
+    def get_trace_start_address(self) -> int:
+        try:
+            addr = self._trace["trace"][0][0]
+            if not isinstance(addr, int):
+                addr = int(addr, base=0)
+        except:
+            return 0x0
+        return addr
+
     def get_trace(self) -> List[Tuple[str, str, str, str]]:
         return self._trace["trace"]
