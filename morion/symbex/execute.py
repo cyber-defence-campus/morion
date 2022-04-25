@@ -3,6 +3,7 @@
 import argparse
 import importlib
 import inspect
+import IPython
 import os
 import pkgutil
 import sys
@@ -139,7 +140,7 @@ class Executor:
         self._logger.info(f"... finished loading file '{trace_file:s}'.")
         return
 
-    def __is_controllable(self, ast, val: int, byte_size: int) -> List[bool]:
+    def _is_controllable(self, ast, val: int, byte_size: int) -> List[bool]:
         byte_mask = []
         val = format(val, "0{:d}x".format(byte_size*2))
         for i in range(0, len(val), 2):
@@ -156,7 +157,7 @@ class Executor:
                 byte_mask.append(False)
         return byte_mask
 
-    def __is_register_symbolic(self, reg_name: str) -> List[bool]:
+    def _is_register_symbolic(self, reg_name: str) -> List[bool]:
         reg = self.ctx.getRegister(reg_name)
         reg_size = reg.getSize()
         byte_mask = [False] * reg_size
@@ -164,20 +165,20 @@ class Executor:
         if self.ctx.isRegisterSymbolized(reg) and reg_size > 0:
             reg_ast = self.ctx.getRegisterAst(reg)
             reg_val = self.ctx.getConcreteRegisterValue(reg)
-            byte_mask = self.__is_controllable(reg_ast, reg_val, reg_size)
+            byte_mask = self._is_controllable(reg_ast, reg_val, reg_size)
         return byte_mask
 
-    def __is_memory_symbolic(self, mem_addr: int, mem_size: int = CPUSIZE.BYTE) -> List[bool]:
+    def _is_memory_symbolic(self, mem_addr: int, mem_size: int = CPUSIZE.BYTE) -> List[bool]:
         mem = MemoryAccess(mem_addr, mem_size)
         byte_mask = [False] * mem_size
         # Memory AST contains symbolic variables
         if self.ctx.isMemorySymbolized(mem) and mem_size > 0:
             mem_ast = self.ctx.getMemoryAst(mem)
             mem_val = self.ctx.getConcreteMemoryValue(mem)
-            byte_mask = self.__is_controllable(mem_ast, mem_val, mem_size)
+            byte_mask = self._is_controllable(mem_ast, mem_val, mem_size)
         return byte_mask
 
-    def __step(self, addr: int, opcode: bytes, disassembly: str, comment: str = None) -> bool:
+    def _step(self, addr: int, opcode: bytes, disassembly: str, comment: str = None) -> bool:
         try:
             # Create instruction
             inst = Instruction(addr, opcode)
@@ -194,15 +195,16 @@ class Executor:
 
             # Post-process instruction
             for post_processing_function in self._post_processing_functions:
-                post_processing_function(inst)
+                post_processing_function(self.ctx, inst, self._logger)
         except Exception as e:
             self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x} {disassembly:s}': {str(e):s}")
             return False
         return is_supported
 
-    def run(self) -> None:
+    def run(self, stepping: bool = False) -> None:
         # Symbolic execution
         self._logger.info(f"Start symbolic execution...")
+        self.stepping = stepping
         for addr, opcode, disassembly, comment in self._recorder.get_trace():
             # Decode instruction
             try:
@@ -226,8 +228,10 @@ class Executor:
                     self._logger.debug(f"--- Hook: '{hook_symbols:s}'", color="yellow")
 
             # Symbolic execution
-            if not self.__step(addr, opcode, disassembly, comment):
+            if not self._step(addr, opcode, disassembly, comment):
                 break
+            if self.stepping:
+                IPython.embed(header="Stepping... (disable by 'self.stepping = False')")
         self._logger.info(f"... finished symbolic execution.")
 
         # Symbolic state
@@ -236,13 +240,13 @@ class Executor:
         for reg_id in sorted(self.ctx.getSymbolicRegisters().keys()):
             reg = self.ctx.getRegister(reg_id)
             reg_name = reg.getName()
-            byte_mask = self.__is_register_symbolic(reg_name)
+            byte_mask = self._is_register_symbolic(reg_name)
             reg_mask = "".join("$$" if b else "XX" for b in byte_mask)
             if "$" in reg_mask:
                 self._logger.debug(f"\t{reg_name:s}={reg_mask:s}")
         self._logger.debug("Symbolic Mems:")
         for mem_addr in sorted(self.ctx.getSymbolicMemory().keys()):
-            byte_mask = self.__is_memory_symbolic(mem_addr)
+            byte_mask = self._is_memory_symbolic(mem_addr)
             mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
             if "$" in mem_mask:
                 self._logger.debug(f"\t0x{mem_addr:x}={mem_mask:s}")
@@ -267,12 +271,15 @@ def main() -> None:
                         choices=["critical", "error", "warning", "info", "debug"],
                         default="debug",
                         help="log level")
+    parser.add_argument("--stepping",
+                        action="store_true",
+                        help="Open a debug shell after each instruction")
     args = parser.parse_args()
 
     # Symbolic execution
     se = Executor(Logger(args.log_level))
     se.load(args.trace_file)
-    se.run()
+    se.run(args.stepping)
     se.store(args.trace_file)
     return
 
