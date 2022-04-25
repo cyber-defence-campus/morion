@@ -6,16 +6,17 @@ from morion.tracing.gdb.trace import GdbHelper
 from typing                   import List, Tuple
 
 
-class SimulationFunction:
+class FunctionHook:
     """
     Base class for simulations functions.
     """
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        self.name = name
-        self.entry_addr = entry_addr
-        self.leave_addr = leave_addr
-        self.logger = logger
+        self._name = name
+        self._entry_addr = entry_addr
+        self._leave_addr = leave_addr
+        self._logger = logger
+        self.synopsis = ""
         return
 
     def _arm_assemble(self, code_lines: List[str], is_entry: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
@@ -50,55 +51,53 @@ class SimulationFunction:
             f"movt {reg_name:s}, #0x{value_t:x}"
         ]
 
-##    def on_concex_entry(self, symbex: "SymbolicExecutor") -> List[Tuple[int, bytes, str]]:
-##        """On entry hook during the concrete execution phase (1).
-##
-##        At this point, the hooked function has not yet been executed concretely.
-##        The concrete arguments of the function are available.
-##
-##        The function is expected to return a list of assembly instructions in
-##        the form of address, opcode, comment tuples.
-##
-##        Within this function, only registers/memory in the context of the
-##        concrete execution should be accessed (not from symbolic execution).
-##        """
-##        try:
-##            arch = SymHelper.get_architecture()
-##            if arch in ["armv6", "armv7"]:
-##                code = [
-##                    # Add assembly instructions here
-##                ]
-##                return self._arm_assemble(code, is_entry=True, comment=f"{self.name:s}@on_concex_entry")
-##            else:
-##                raise Exception(f"Architecture '{arch:s}' not supported.")
-##        except Exception as exc:
-##            symbex.logger.error(f"{self.name:s}@on_concex_entry failed: {exc}")
-##        return []
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        """On entry hook during concrete execution.
 
-##    def on_concex_leave(self, symbex: "SymbolicExecutor") -> List[Tuple[int, bytes, str]]:
-##        """On leave hook during the concrete execution phase (1).
-##
-##        At this point, the hooked function has been executed concretely. The
-##        concrete return value of the function is available.
-##            
-##        The function is expected to return a list of assembly instructions in
-##        the form of address, opcode, comment tuples.
-##
-##        Within this function, only registers/memory in the context of the
-##        concrete execution should be accessed (not from symbolic execution).
-##        """
-##        try:
-##            arch = SymHelper.get_architecture()
-##            if arch in ["armv6", "armv7"]:
-##                code = [
-##                    # Add assembly instructions here
-##                ]
-##                return self._arm_assemble(code, is_entry=False, comment=f"{self.name:s}@on_concex_leave")
-##            else:
-##                raise Exception(f"Architecture '{arch:s}' not supported.")
-##        except Exception as exc:
-##            symbex.logger.error(f"{self.name:s}@on_concex_leave failed: {exc}")
-##        return []
+        At this point, the hooked function has not yet been executed concretely.
+        The concrete arguments of the function are available.
+
+        The function is expected to return a list of assembly instructions in
+        the form of address, opcode, disassembly, comment tuples.
+
+        Within this function, only registers/memory in the context of the
+        concrete execution should be accessed (not from symbolic execution).
+        """
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                code = [
+                    # Add assembly instructions here
+                ]
+                return self._arm_assemble(code, is_entry=True, comment=f"{self._name:s} (on_entry)")
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            symbex.logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        """On leave hook during concrete execution.
+
+        At this point, the hooked function has been executed concretely. The
+        concrete return value of the function is available.
+            
+        The function is expected to return a list of assembly instructions in
+        the form of address, opcode, disassembly, comment tuples.
+
+        Within this function, only registers/memory in the context of the
+        concrete execution should be accessed (not from symbolic execution).
+        """
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                code = [
+                    # Add assembly instructions here
+                ]
+                return self._arm_assemble(code, is_entry=False, comment=f"{self._name:s} (on_leave)")
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as exc:
+            symbex.logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+        return []
 
     
 
