@@ -151,9 +151,9 @@ class GdbTracer:
     Trace (part of) a binary's execution.
     """
     def __init__(self) -> None:
-        self._stop_addrs = []
         self._accessed_regs = {}
         self._accessed_mems = {}
+        self._stop_addrs = []
         self._recorder = Recorder(logger)
         self._addr_mapper = AddressMapper()
         return

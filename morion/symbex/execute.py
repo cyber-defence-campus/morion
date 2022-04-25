@@ -23,7 +23,7 @@ class Executor:
         self._logger = logger
         self._recorder = Recorder(logger)
         self._addr_mapper = AddressMapper()
-        self.__post_processing_functions = []
+        self._post_processing_functions = []
         return
 
     def load(self, trace_file: str) -> None:
@@ -193,7 +193,7 @@ class Executor:
             self._logger.debug("".join(item.ljust(36) for item in line))
 
             # Post-process instruction
-            for post_processing_function in self.__post_processing_functions:
+            for post_processing_function in self._post_processing_functions:
                 post_processing_function(inst)
         except Exception as e:
             self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x} {disassembly:s}': {str(e):s}")

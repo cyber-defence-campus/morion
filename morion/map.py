@@ -10,12 +10,12 @@ class AddressMapper:
     def __init__(self) -> None:
         self._addr_map = {
             # 0x0: {
-            #    "symbols": ["sample"],
-            #    "hooks": {
-            #        "funs": [],
-            #        "return_addr": 0x0
-            #    }
-            #}
+            #     "symbols": ["sample"],
+            #     "hooks": {
+            #         "funs": [],
+            #         "return_addr": 0x0
+            #         }
+            # }
         }
         return
 

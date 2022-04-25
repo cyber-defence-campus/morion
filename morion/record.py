@@ -11,7 +11,6 @@ class Recorder:
     """
     def __init__(self, logger: Logger = Logger()) -> None:
         self._logger = logger
-        # TODO: _trace --> __trace
         self._trace = {
             "info": {
             #    "arch": "armv7",
