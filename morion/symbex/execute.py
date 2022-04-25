@@ -205,6 +205,7 @@ class Executor:
         # Symbolic execution
         self._logger.info(f"Start symbolic execution...")
         self.stepping = stepping
+        pc = self._recorder.get_trace_start_address()
         for addr, opcode, disassembly, comment in self._recorder.get_trace():
             # Decode instruction
             try:
@@ -214,6 +215,11 @@ class Executor:
             except Exception as e:
                 self._logger.critical(f"Failed to read instruction from trace file: {str(e):s}")
                 return
+
+            # Validate program counter
+            if addr != pc:
+                self._logger.critical("Symbolic execution is desynchronized!")
+                break
 
             # Execute hook functions
             hook_funs, hook_return_addr = self._addr_mapper.get_hooks(addr)
@@ -232,6 +238,10 @@ class Executor:
                 break
             if self.stepping:
                 IPython.embed(header="Stepping... (disable by 'self.stepping = False')")
+
+            # Update program counter
+            pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)
+            
         self._logger.info(f"... finished symbolic execution.")
 
         # Symbolic state
