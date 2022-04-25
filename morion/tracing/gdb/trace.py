@@ -8,6 +8,7 @@ import pkgutil
 import re
 import sys
 from   morion.log         import Logger
+from   morion.map         import AddressMapper
 from   morion.record      import Recorder
 from   morion.tracing.gdb import hooking
 from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction, MODE, OPERAND, TritonContext
@@ -118,7 +119,7 @@ class GdbTraceCommand(gdb.Command):
                 c += 1
             # Parse trace file
             self._trace_file = argv[c]
-            if not self._tracer.load_trace_file(argv[c]):
+            if not self._tracer.load(argv[c]):
                 raise Exception("Cannot load trace file.")
             c += 1
             # Parse stop addresses
@@ -153,16 +154,8 @@ class GdbTracer:
         self._stop_addrs = []
         self._accessed_regs = {}
         self._accessed_mems = {}
-        self._addr_map = {
-            # 0x0: {
-            #    "symbols": ["sample"],
-            #    "hooks": {
-            #        "funs": [],
-            #        "return_addr": 0x0
-            #    }
-            #}
-        }
         self._recorder = Recorder(logger)
+        self._addr_mapper = AddressMapper()
         return
 
     def __init_context(self) -> TritonContext:
@@ -251,22 +244,18 @@ class GdbTracer:
             # Stop condition
             if not pc or pc in self._stop_addrs: break
 
-            # Hook information
-            hooks = self._addr_map.get(pc, {}).get("hooks", {})
-            hook_funs = hooks.get("funs", [])
-            hook_reta = hooks.get("return_addr", None)
-            symbols = self._addr_map.get(pc, {}).get("symbols", [])
-            hook_symb = ", ".join(symbol for symbol in symbols if symbol)
-
             # Execute hook functions
+            hook_funs, hook_return_addr = self._addr_mapper.get_hooks(pc)
             for hook_fun in hook_funs:
-                logger.debug(f"Hook: 0x{pc:x} '{hook_symb:s}'")
+                hook_symbols = self._addr_mapper.get_symbols(pc)
+                hook_symbols = ", ".join(s for s in hook_symbols if s)
+                logger.debug(f"Hook: 0x{pc:x} '{hook_symbols:s}'")
                 for addr, opcode, disassembly, comment in hook_fun():
                     self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
 
             # Skip until return address
-            if hook_reta is not None:
-                gdb.execute(f"tbreak *{hook_reta:d}")
+            if hook_return_addr is not None:
+                gdb.execute(f"tbreak *{hook_return_addr:d}")
                 gdb.execute(f"continue")
                 continue
 
@@ -345,8 +334,8 @@ class GdbTracer:
         logger.info("... finished tracing.")
         return True
 
-    def load_trace_file(self, trace_file: str) -> bool:
-        # Load file
+    def load(self, trace_file: str) -> bool:
+        # Load trace file
         logger.info(f"Start loading trace file '{trace_file:s}'...")
         if not self._recorder.load(trace_file):
             return False
@@ -376,6 +365,7 @@ class GdbTracer:
         # Set hooks
         logger.debug("Hooks:")
         hooks = self._recorder._trace.get("hooks", {})
+        if hooks is None: hooks = {}
         for lib, funs in hooks.items():
             if funs is None: funs = {}
             for fun, addrs in funs.items():
@@ -400,34 +390,18 @@ class GdbTracer:
                             ci = c(f"{m_name:s}:{c_name:s}", entry, leave, logger)
 
                             # Register hook at entry address
-                            _addr_map = self._addr_map.get(ci.entry_addr, {})
-                            _symbol = f"{ci.name:s} (entry)"
-                            _symbols = _addr_map.get("symbols", [])
-                            _symbols.append(_symbol)
-                            _hooks = _addr_map.get("hooks", {})
-                            _funs = _hooks.get("funs", [])
-                            _funs.append(ci.on_concex_entry)
-                            _hooks["funs"] = _funs
-                            _hooks["return_addr"] = ci.leave_addr
-                            _addr_map["hooks"] = _hooks
-                            _addr_map["symbols"] = _symbols
-                            self._addr_map[ci.entry_addr] = _addr_map
-                            logger.debug(f"\t0x{ci.entry_addr:x} '{ci.name:s} (entry)'")
+                            self._addr_mapper.add(addr=entry,
+                                               symbol=f"{m_name:s}:{c_name:s} (entry)",
+                                               function=ci.on_entry,
+                                               return_addr=leave)
+                            logger.debug(f"\t0x{entry:x} '{m_name:s}:{c_name:s} (entry)'")
 
                             # Register hook at leave address
-                            _addr_map = self._addr_map.get(ci.leave_addr, {})
-                            _symbol = f"{ci.name:s} (leave)"
-                            _symbols = _addr_map.get("symbols", [])
-                            _symbols.append(_symbol)
-                            _hooks = _addr_map.get("hooks", {})
-                            _funs = _hooks.get("funs", [])
-                            _funs.append(ci.on_concex_leave)
-                            _hooks["funs"] = _funs
-                            _hooks["return_addr"] = None
-                            _addr_map["hooks"] = _hooks
-                            _addr_map["symbols"] = _symbols
-                            self._addr_map[ci.leave_addr] = _addr_map
-                            logger.debug(f"\t0x{ci.leave_addr:x} '{ci.name:s} (leave)'")
+                            self._addr_mapper.add(addr=leave,
+                                               symbol=f"{m_name:s}:{c_name:s} (leave)",
+                                               function=ci.on_leave,
+                                               return_addr=None)
+                            logger.debug(f"\t0x{leave:x} '{m_name:s}:{c_name:s} (leave)'")
         logger.info(f"... finished loading trace file '{trace_file:s}'.")
         return True
 
