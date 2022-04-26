@@ -72,8 +72,10 @@ class BackwardSlicer(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """
-    Calculate backward slices in a binary's program trace.
+    description = """Symbolically execute a program trace for backward slicing.
+
+    The analysis identifies backward slices for a specified register or memory
+    address.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
