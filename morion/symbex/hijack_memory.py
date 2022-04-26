@@ -3,23 +3,22 @@
 import argparse
 from   morion.log                           import Logger
 from   morion.symbex.execute                import Executor
-from   morion.symbex.analysis.vulnerability import identify_controllable_memory_reads
-from   morion.symbex.analysis.vulnerability import identify_controllable_memory_writes
+from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
 class MemoryHijacker(Executor):
 
-    def run(self, stepping: bool = False) -> None:
+    def run(self, args: argparse.Namespace) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
-        # Add post-processing function
-        self._post_processing_functions.append(identify_controllable_memory_reads)
-        self._post_processing_functions.append(identify_controllable_memory_writes)
+        # Set post-processing functions
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_reads)
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_writes)
         # Run symbolic execution
-        super().run(stepping)
-        # Remove post-processing function
+        super().run(args)
+        # Remove post-processing functions
         self._post_processing_functions.pop()
         self._post_processing_functions.pop()
         # Restore symbolic execution mode
@@ -45,12 +44,15 @@ def main() -> None:
     parser.add_argument("--stepping",
                         action="store_true",
                         help="Open a debug shell after each instruction")
+    parser.add_argument("--disallow_user_inputs",
+                        action="store_true",
+                        help="Run without requesting the user for inputs")
     args = parser.parse_args()
 
     # Symbolic Execution
     se = MemoryHijacker(Logger(args.log_level))
     se.load(args.trace_file)
-    se.run(args.stepping)
+    se.run(args)
     se.store(args.trace_file)
     return
 

@@ -3,7 +3,7 @@
 import argparse
 from   morion.log                           import Logger
 from   morion.symbex.execute                import Executor
-from   morion.symbex.analysis.vulnerability import identify_backward_slice
+from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
@@ -50,20 +50,20 @@ class BackwardSlicer(Executor):
             return False
         return True
 
-    def run(self, reg_name: str, mem_addr: int, stepping: bool = False) -> None:
+    def run(self, args: argparse.Namespace) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, False)
-        # Add post-processing function
-        self._post_processing_functions.append(identify_backward_slice)
+        # Set post-processing functions
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_backward_slice)
         # Run symbolic execution
-        super().run(stepping)
+        super().run(args)
         # Calculate backward slice
-        if reg_name is not None:
-            self._backward_slice_register(reg_name)
-        if mem_addr is not None:
-            self._backward_slice_memory(mem_addr)
-        # Remove post-processing function
+        if args.reg_name is not None:
+            self._backward_slice_register(args.reg_name)
+        if args.mem_addr is not None:
+            self._backward_slice_memory(args.mem_addr)
+        # Remove post-processing functions
         self._post_processing_functions.pop()
         # Restore symbolic execution mode
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, self._only_on_symbolized)
@@ -90,6 +90,9 @@ def main() -> None:
     parser.add_argument("--stepping",
                         action="store_true",
                         help="Open a debug shell after each instruction")
+    parser.add_argument("--disallow_user_inputs",
+                        action="store_true",
+                        help="Run without requesting the user for inputs")
     args = parser.parse_args()
 
     if (args.reg_name is None) == (args.mem_addr is None):
@@ -108,7 +111,7 @@ def main() -> None:
     # Symbolic Execution
     se = BackwardSlicer(Logger(args.log_level))
     se.load(args.trace_file)
-    se.run(args.reg_name, args.mem_addr, args.stepping)
+    se.run(args)
     se.store(args.trace_file)
     return
 

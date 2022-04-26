@@ -7,12 +7,14 @@ import IPython
 import os
 import pkgutil
 import sys
-from   morion.log    import Logger
-from   morion.map    import AddressMapper
-from   morion.record import Recorder
-from   morion.symbex import hooking
-from   triton        import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction, MemoryAccess, MODE, TritonContext
-from   typing        import List
+from   morion.log                           import Logger
+from   morion.map                           import AddressMapper
+from   morion.record                        import Recorder
+from   morion.symbex                        import hooking
+from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
+from   triton                               import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction
+from   triton                               import MemoryAccess, MODE, TritonContext
+from   typing                               import List
 
 
 class Executor:
@@ -201,10 +203,12 @@ class Executor:
             return False
         return is_supported
 
-    def run(self, stepping: bool = False) -> None:
+    def run(self, args: argparse.Namespace) -> None:
         # Symbolic execution
         self._logger.info(f"Start symbolic execution...")
-        self.stepping = stepping
+        self.stepping = args.stepping
+        VulnerabilityAnalysis.disallow_user_inputs = args.disallow_user_inputs
+        VulnerabilityAnalysis.analysis_history = {}
         pc = self._recorder.get_trace_start_address()
         for addr, opcode, disassembly, comment in self._recorder.get_trace():
             # Decode instruction
@@ -301,12 +305,15 @@ def main() -> None:
     parser.add_argument("--stepping",
                         action="store_true",
                         help="Open a debug shell after each instruction")
+    parser.add_argument("--disallow_user_inputs",
+                        action="store_true",
+                        help="Run without requesting the user for inputs")
     args = parser.parse_args()
 
     # Symbolic execution
     se = Executor(Logger(args.log_level))
     se.load(args.trace_file)
-    se.run(args.stepping)
+    se.run(args)
     se.store(args.trace_file)
     return
 
