@@ -57,10 +57,15 @@ states:
       '0xbefffb66': ['0xef']
       '0xbefffb67': ['0xb6']
     regs:
+      c: ['0x00000001']
+      n: ['0x00000000']
+      pc: ['0xb6ef0a20']
       r0: ['0x00000000']
       r11: ['0x00000000']
+      r2: ['0x00400564']
       r3: ['0x00000000']
       sp: ['0xbefffb68']
+      v: ['0x00000000']
       z: ['0x00000000']
 trace:
 - ['0x00400554', 00 30 a0 e1, 'mov r3, r0', 's = (char *) calloc(BUF_LENGTH, sizeof(char));
