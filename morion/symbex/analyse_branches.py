@@ -20,11 +20,13 @@ class BranchAnalyzer(Executor):
         # Remove post-processing functions
         self._post_processing_functions.pop()
         # Log branch analysis summary
-        self._logger.info("Branch Analysis:", color="green")
+        self._logger.info(f"Summarizing branch analysis...")
         for branch, model_summary in VulnerabilityAnalysis.analysis_history.items():
-            self._logger.info(f"\t{branch:s}", color="green")
+            self._logger.info(f"\t{branch:s}", color="magenta")
             for line in model_summary:
-                self._logger.info(f"\t\t{line:s}", color="green")
+                self._logger.info(f"\t\t{line:s}", color="magenta")
+        branch_count = len(VulnerabilityAnalysis.analysis_history)
+        self._logger.info(f"... a total of {branch_count:d} new branch(es) identified.")
         # Restore symbolic execution mode
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, self._only_on_symbolized)
         return
@@ -32,10 +34,11 @@ class BranchAnalyzer(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """
-    Analyse branches in a binary's program trace. For each multiway branch along
-    the trace, output concrete values of how to reach the non-taken branch. A
-    specific branch is only evaluated once.
+    description = """Symbolically execute a program trace for branch analysis.
+
+    The analysis identifies multiway branches along the trace and outputs
+    concrete values of how to reach the non-taken branch. A specific branch is
+    only evaluated once.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
