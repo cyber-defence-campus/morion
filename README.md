@@ -50,7 +50,7 @@ source venvs/morion/bin/activate
 ```
 3. Install the package (add `-e` for editable mode):
 ```shell
-(concolex) pip install .
+(morion) pip install .
 ```
 ## Usage
 ### Tracing
@@ -61,3 +61,12 @@ gdb -q -x morion/tracing/gdb/trace.py
 (gdb) help target   # Attach to target binary
 ```
 ### Symbolic Execution
+Symbolic execution of a binary's program trace:
+```shell
+(morion) morion -h                   # Perform symbolic execution
+(morion) morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
+(morion) morion_control_hijacker -h  # Use symbolic execution to identify potential control flow hijacks
+(morion) morion_memory_hijacker  -h  # Use symbolic execution to identify potential memory hijacks
+(morion) morion_branch_analyzer  -h  # Use symbolic execution to analyze branches
+(morion) morion_path_analyzer    -h  # Use symbolic execution to analyze paths
+```
