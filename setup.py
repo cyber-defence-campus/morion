@@ -17,7 +17,7 @@ setup(
             'morion_control_hijacker=morion.symbex.hijack_control:main',
             'morion_memory_hijacker=morion.symbex.hijack_memory:main',
             'morion_branch_analyzer=morion.symbex.analyse_branches:main',
-##            'morion_path_analyzer='
+            'morion_path_analyzer=morion.symbex.analyse_paths:main'
         ]
     }
 )
