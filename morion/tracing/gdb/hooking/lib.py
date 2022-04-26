@@ -28,10 +28,10 @@ class FunctionHook:
         # Initialize Keystone assembler
         ks = Ks(arch, mode)
         # Assemble code
-        addr = 0x1000
         pc = GdbHelper.get_register_value("pc")
         if is_entry:
-            code_line = f"mov pc, 0x{addr:x}"
+            self._hook_addr = 0x1000
+            code_line = f"mov pc, 0x{self._hook_addr:x}"
             encoding, _ = ks.asm(code_line, as_bytes=True)
             inst_trace.append((pc, encoding, code_line, comment))
         else:
@@ -39,8 +39,8 @@ class FunctionHook:
             code_lines.extend([f"mov pc, r2"])
         for code_line in code_lines:
             encoding, _ = ks.asm(code_line, as_bytes=True)
-            inst_trace.append((addr, encoding, code_line, comment))
-            addr += len(encoding)
+            inst_trace.append((self._hook_addr, encoding, code_line, comment))
+            self._hook_addr += len(encoding)
         return inst_trace
 
     def _arm_mov_to_reg(self, reg_name: str, value: int) -> List[str]:
