@@ -251,7 +251,16 @@ class Executor:
         # Symbolic state
         self._logger.info("Start analyzing symbolic state...")
         self._logger.info("Symbolic Regs:", color="magenta")
+        reg_names = set()
+        # Process symbolic registers
+        for reg_id in self.ctx.getSymbolicRegisters().keys():
+            reg = self.ctx.getRegister(reg_id)
+            reg_names.add(reg.getName())
+        # Process registers accessed in entry state
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+            reg_names.add(reg_name)
+        # Process registers
+        for reg_name in reg_names:
             reg = self.ctx.getRegister(reg_name)
             reg_value = self.ctx.getConcreteRegisterValue(reg)
             byte_mask = self._is_register_symbolic(reg_name)
@@ -264,12 +273,20 @@ class Executor:
             if "$" in reg_mask:
                 self._recorder.add_symbolic_register(reg_name, is_entry=False)
         self._logger.info("Symbolic Mems:", color="magenta")
+        mem_addrs = set()
+        # Process symbolic memory addresses
+        for mem_addr in self.ctx.getSymbolicMemory().keys():
+            mem_addrs.add(mem_addr)
+        # Process memory addresses accessed in entry state
         for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
             try:
                 if not isinstance(mem_addr, int):
                     mem_addr = int(mem_addr, base=0)
             except:
                 continue
+            mem_addrs.add(mem_addr)
+        # Process memory addresses
+        for mem_addr in mem_addrs:
             mem_value = self.ctx.getConcreteMemoryValue(mem_addr)
             byte_mask = self._is_memory_symbolic(mem_addr)
             mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
