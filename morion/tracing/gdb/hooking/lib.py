@@ -66,9 +66,8 @@ class FunctionHook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                code = [
-                    # Add assembly instructions here
-                ]
+                # Inject assembly
+                code = []
                 return self._arm_assemble(code, is_entry=True, comment=f"{self._name:s} (on_entry)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -90,9 +89,8 @@ class FunctionHook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                code = [
-                    # Add assembly instructions here
-                ]
+                # Inject assembly
+                code = []
                 return self._arm_assemble(code, is_entry=False, comment=f"{self._name:s} (on_leave)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as exc:
