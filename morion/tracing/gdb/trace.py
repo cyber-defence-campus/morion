@@ -249,9 +249,13 @@ class GdbTracer:
             for hook_fun in hook_funs:
                 hook_symbols = self._addr_mapper.get_symbols(pc)
                 hook_symbols = ", ".join(s for s in hook_symbols if s)
-                logger.debug(f"Hook: 0x{pc:x} '{hook_symbols:s}'")
+                if hook_return_addr is not None:
+                    logger.debug(f"--- Hook: '{hook_symbols:s}'")
+                    logger.debug(f"---       '{hook_fun.__self__.synopsis:s}'")
                 for addr, opcode, disassembly, comment in hook_fun():
                     self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
+                if hook_return_addr is None:
+                    logger.debug(f"--- Hook: '{hook_symbols:s}'")
 
             # Skip until return address
             if hook_return_addr is not None:
