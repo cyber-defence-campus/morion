@@ -28,10 +28,11 @@ class MemoryHijacker(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """
-    Identify potential memory hijacks in a binary's program trace. A memory
-    hijack corresponds to the target of a memory read or write operation being
-    (partly) symbolic.
+    description = """Symbolically execute a program trace to identify potential
+    memory hijacks.
+
+    A memory hijack corresponds to the target of a memory read or write
+    operation being (partly) symbolic.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)

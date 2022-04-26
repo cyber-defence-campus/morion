@@ -26,9 +26,10 @@ class ControlHijacker(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """
-    Identify potential control flow hijacks in a binary's program trace. A
-    control flow hijack corresponds to registers, influencing the control flow
+    description = """Symbolically execute a program trace to identify potential
+    control flow hijacks.
+
+    A control flow hijack corresponds to registers, influencing the control flow
     (such as PC), becoming (partly) symbolic.
     """
     parser = argparse.ArgumentParser(description=description,
