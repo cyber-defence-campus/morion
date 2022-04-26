@@ -106,7 +106,7 @@ class GdbTraceCommand(gdb.Command):
         self._tracer = GdbTracer()
         return
 
-    def __parse_args(self, args: str) -> bool:
+    def _parse_args(self, args: str) -> bool:
         try:
             argv = gdb.string_to_argv(args)
             if len(argv) <= 1:
@@ -135,7 +135,7 @@ class GdbTraceCommand(gdb.Command):
 
     def invoke(self, args: str, from_tty: bool) -> bool:
         # Parse command arguments
-        if not self.__parse_args(args):
+        if not self._parse_args(args):
             return False
 
         # Run tracer
@@ -158,7 +158,7 @@ class GdbTracer:
         self._addr_mapper = AddressMapper()
         return
 
-    def __init_context(self) -> TritonContext:
+    def _init_context(self) -> TritonContext:
         ctx = TritonContext()
         ctx.setMode(MODE.ALIGNED_MEMORY, True)
         ctx.setAstRepresentationMode(AST_REPRESENTATION.PYTHON)
@@ -171,16 +171,16 @@ class GdbTracer:
             sys.exit("Unsupported architecture.")
         return ctx
 
-    def __get_architecture(self) -> str:
+    def _get_architecture(self) -> str:
         arch = GdbHelper.get_architecture()
         if not arch in ["armv6", "armv7"]:
             logger.critical(f"Architecture '{arch:s}' not supported.")
             sys.exit("Unsupported architecture.")
         return arch
     
-    def __get_register_value(self, reg_name: str) -> int:
+    def _get_register_value(self, reg_name: str) -> int:
         reg_value = 0x0
-        arch = self.__get_architecture()
+        arch = self._get_architecture()
         if arch in ["armv6", "armv7"]:
             # CPSR negative flag
             if reg_name == 'n':
@@ -203,10 +203,10 @@ class GdbTracer:
                 reg_value = GdbHelper.get_register_value(reg_name)
         return reg_value
 
-    def __get_memory_value(self, mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
+    def _get_memory_value(self, mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
         return GdbHelper.get_memory_value(mem_addr, mem_size)
 
-    def __process(self, inst: Instruction, ctx: TritonContext) -> bool:
+    def _process(self, inst: Instruction, ctx: TritonContext) -> bool:
         # Disassembling
         try:
             ctx.disassembly(inst)
@@ -225,14 +225,14 @@ class GdbTracer:
         logger.info("Start tracing...")
         # Store architecture information
         info = {
-            "arch": self.__get_architecture()
+            "arch": self._get_architecture()
         }
         if info["arch"] in ["armv6", "armv7"]:
             info["thumb"] = GdbHelper.get_thumb_state()
         self._recorder.add_info(**info)
         
         # Store initial program counter value
-        pc = self.__get_register_value("pc")
+        pc = self._get_register_value("pc")
         self._accessed_regs["pc"] = pc
         self._recorder.add_address(pc, True)
 
@@ -260,11 +260,11 @@ class GdbTracer:
                 continue
 
             # Create fresh context
-            rctx = self.__init_context()
-            mctx = self.__init_context()
+            rctx = self._init_context()
+            mctx = self._init_context()
 
             # Process instruction  (fresh context)
-            if not self.__process(inst, rctx): break
+            if not self._process(inst, rctx): break
             self._recorder.add_instruction(inst.getAddress(), inst.getOpcode(), inst.getDisassembly(), source)
 
             # Identify accessed registers
@@ -273,11 +273,11 @@ class GdbTracer:
                 reg_name = reg.getName()
                 if reg_name.lower() == "unknown": return
                 try:
-                    reg_value = self.__get_register_value(reg_name)
+                    reg_value = self._get_register_value(reg_name)
                     # Store register value on first access
                     if reg_name not in self._accessed_regs:
                         self._accessed_regs[reg_name] = reg_value
-                        self._recorder.add_register(reg_name, reg_value, is_entry=True)
+                        self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
                         logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
                     # Set register value in context
                     mctx.setConcreteRegisterValue(reg, reg_value)
@@ -297,7 +297,7 @@ class GdbTracer:
                     process_register(op.getSegmentRegister())
 
             # Process instruction (registers concretized)
-            if not self.__process(inst, mctx): break
+            if not self._process(inst, mctx): break
 
             # Identify accessed memory
             logger.debug("Mems:")
@@ -308,9 +308,9 @@ class GdbTracer:
                     try:
                         # Store memory value on first access
                         if mem_addr+i not in self._accessed_mems:
-                            mem_value = self.__get_memory_value(mem_addr+i, CPUSIZE.BYTE)
+                            mem_value = self._get_memory_value(mem_addr+i, CPUSIZE.BYTE)
                             self._accessed_mems[mem_addr+i] = mem_value
-                            self._recorder.add_memory(mem_addr+i, mem_value, is_entry=True)
+                            self._recorder.add_concrete_memory(mem_addr+i, mem_value, is_entry=True)
                             logger.debug(f"\t0x{mem_addr+i:x} = 0x{mem_value:02x}")
                     except Exception as exc:
                         logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:x}: '{str(exc):s}'")
@@ -320,14 +320,14 @@ class GdbTracer:
 
         # Store accessed registers at leave
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
-            reg_value = self.__get_register_value(reg_name)
-            self._recorder.add_register(reg_name, reg_value, is_entry=False)
+            reg_value = self._get_register_value(reg_name)
+            self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
 
         # Store accessed memory at leave
         for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
             mem_addr = int(mem_addr, base=16)
-            mem_value = self.__get_memory_value(mem_addr, CPUSIZE.BYTE)
-            self._recorder.add_memory(mem_addr, mem_value, is_entry=False)
+            mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
+            self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
 
         self._recorder.add_address(pc, False)
         self._stop_addrs.clear()

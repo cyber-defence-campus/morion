@@ -247,23 +247,40 @@ class Executor:
         # Symbolic state
         self._logger.info("Start analyzing symbolic state...")
         self._logger.debug("Symbolic Regs:")
-        for reg_id in sorted(self.ctx.getSymbolicRegisters().keys()):
-            reg = self.ctx.getRegister(reg_id)
-            reg_name = reg.getName()
+        for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+            reg = self.ctx.getRegister(reg_name)
+            reg_value = self.ctx.getConcreteRegisterValue(reg)
             byte_mask = self._is_register_symbolic(reg_name)
             reg_mask = "".join("$$" if b else "XX" for b in byte_mask)
+            # Log symbolic registers
             if "$" in reg_mask:
                 self._logger.debug(f"\t{reg_name:s}={reg_mask:s}")
+            # Record register values
+            self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
+            if "$" in reg_mask:
+                self._recorder.add_symbolic_register(reg_name, is_entry=False)
         self._logger.debug("Symbolic Mems:")
-        for mem_addr in sorted(self.ctx.getSymbolicMemory().keys()):
+        for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
+            try:
+                if not isinstance(mem_addr, int):
+                    mem_addr = int(mem_addr, base=0)
+            except:
+                continue
+            mem_value = self.ctx.getConcreteMemoryValue(mem_addr)
             byte_mask = self._is_memory_symbolic(mem_addr)
             mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
+            # Log symbolic memory
             if "$" in mem_mask:
                 self._logger.debug(f"\t0x{mem_addr:x}={mem_mask:s}")
+            # Record memory values
+            self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
+            if "$" in mem_mask:
+                self._recorder.add_symbolic_memory(mem_addr, is_entry=False)
         self._logger.info("... finished analyzing symbolic state.")
 
     def store(self, trace_file: str) -> None:
         self._logger.info(f"Start storing file '{trace_file:s}'...")
+        self._recorder.store(trace_file)
         self._logger.info(f"... finished storing file '{trace_file:s}'.")
         return
 
