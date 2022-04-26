@@ -250,7 +250,7 @@ class Executor:
 
         # Symbolic state
         self._logger.info("Start analyzing symbolic state...")
-        self._logger.debug("Symbolic Regs:")
+        self._logger.info("Symbolic Regs:", color="magenta")
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
             reg = self.ctx.getRegister(reg_name)
             reg_value = self.ctx.getConcreteRegisterValue(reg)
@@ -258,12 +258,12 @@ class Executor:
             reg_mask = "".join("$$" if b else "XX" for b in byte_mask)
             # Log symbolic registers
             if "$" in reg_mask:
-                self._logger.debug(f"\t{reg_name:s}={reg_mask:s}")
+                self._logger.info(f"\t{reg_name:s}={reg_mask:s}", color="magenta")
             # Record register values
             self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
             if "$" in reg_mask:
                 self._recorder.add_symbolic_register(reg_name, is_entry=False)
-        self._logger.debug("Symbolic Mems:")
+        self._logger.info("Symbolic Mems:", color="magenta")
         for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
             try:
                 if not isinstance(mem_addr, int):
@@ -275,7 +275,7 @@ class Executor:
             mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
             # Log symbolic memory
             if "$" in mem_mask:
-                self._logger.debug(f"\t0x{mem_addr:x}={mem_mask:s}")
+                self._logger.info(f"\t0x{mem_addr:x}={mem_mask:s}", color="magenta")
             # Record memory values
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
             if "$" in mem_mask:
