@@ -69,11 +69,11 @@ class strtoul(FunctionHook):
                 # Log arguments
                 self.nptr = GdbHelper.get_register_value("r0")
                 nptr_val = GdbHelper.get_memory_string(self.nptr)
+                self.endptr = GdbHelper.get_register_value("r1")
+                self.base = GdbHelper.get_register_value("r2")
                 self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
                 self._logger.debug(f"\t*nptr    = '{nptr_val:s}'")
-                self.endptr = GdbHelper.get_register_value("r1")
                 self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
-                self.base = GdbHelper.get_register_value("r2")
                 self._logger.debug(f"\tbase     = {self.base:d}")
                 # Inject assembly
                 code = []
@@ -90,8 +90,8 @@ class strtoul(FunctionHook):
                 # TODO: Make other classes similar to this one!
                 # Log arguments
                 endptr_val = GdbHelper.get_memory_string(GdbHelper.get_memory_value(self.endptr))
-                self._logger.debug(f"\t**endptr = '{endptr_val:s}'")
                 ret = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\t**endptr = '{endptr_val:s}'")
                 self._logger.debug(f"\tret      = {ret:d}")
                 # TODO: endptr: _arm_mov_to_mem
                 # Inject assembly
