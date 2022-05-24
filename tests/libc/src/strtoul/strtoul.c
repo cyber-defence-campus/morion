@@ -14,9 +14,9 @@ int main() {
 
     // Testing strtoul
     ret = strtoul(nptr, &endptr, 0);
-    printf("nptr   = %p: '%s'\n", nptr, nptr);
-    printf("endptr = %p: '%s'\n", endptr, endptr);
-    printf("ret    = %lu\n", ret);
+    printf("nptr    = %p: '%s'\n", nptr, nptr);
+    printf("*endptr = %p: '%s'\n", endptr, endptr);
+    printf("ret     = %lu\n", ret);
     if(ret == 2) {
         return -1;
     }
