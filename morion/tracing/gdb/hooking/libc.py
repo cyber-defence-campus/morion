@@ -65,14 +65,16 @@ class strtoul(FunctionHook):
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
+                # TODO: Make other classes similar to this one!
                 # Log arguments
-                nptr = GdbHelper.get_register_value("r0")
-                nptr_val = GdbHelper.get_memory_string(nptr)
+                self.nptr = GdbHelper.get_register_value("r0")
+                nptr_val = GdbHelper.get_memory_string(self.nptr)
+                self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
+                self._logger.debug(f"\t*nptr    = '{nptr_val:s}'")
                 self.endptr = GdbHelper.get_register_value("r1")
-                base = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\tnptr  =0x{nptr:x} ('{nptr_val:s}')")
-                self._logger.debug(f"\tendptr=0x{self.endptr:x}")
-                self._logger.debug(f"\tbase  ={base:d}")
+                self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
+                self.base = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\tbase     = {self.base:d}")
                 # Inject assembly
                 code = []
                 return self._arm_assemble(code, is_entry=True, comment=f"{self._name:s} (on_entry)")
@@ -85,11 +87,12 @@ class strtoul(FunctionHook):
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
+                # TODO: Make other classes similar to this one!
                 # Log arguments
+                endptr_val = GdbHelper.get_memory_string(GdbHelper.get_memory_value(self.endptr))
+                self._logger.debug(f"\t**endptr = '{endptr_val:s}'")
                 ret = GdbHelper.get_register_value("r0")
-                endptr_val = GdbHelper.get_memory_string(self.endptr)
-                self._logger.debug(f"\tret={ret:d}")
-                self._logger.debug(f"\t*endptr='{endptr_val:s}'")
+                self._logger.debug(f"\tret      = {ret:d}")
                 # TODO: endptr: _arm_mov_to_mem
                 # Inject assembly
                 code = self._arm_mov_to_reg("r0", ret)
