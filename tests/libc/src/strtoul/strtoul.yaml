@@ -1,0 +1,186 @@
+hooks:
+  libc:
+    printf:
+    - {entry: '0x4005b4', leave: '0x4005b8'}
+    - {entry: '0x4005d0', leave: '0x4005d4'}
+    - {entry: '0x4005e4', leave: '0x4005e8'}
+    strtoul:
+    - {entry: '0x400598', leave: '0x40059c'}
+info: {arch: armv7, thumb: false}
+states:
+  entry:
+    addr: '0x00400580'
+    mems:
+      '0x0040060c': ['0x44']
+      '0x0040060d': ['0x01']
+      '0x0040060e': ['0x00']
+      '0x0040060f': ['0x00']
+      '0x00400610': ['0x3c']
+      '0x00400611': ['0x01']
+      '0x00400612': ['0x00']
+      '0x00400613': ['0x00']
+      '0x00400614': ['0x3c']
+      '0x00400615': ['0x01']
+      '0x00400616': ['0x00']
+      '0x00400617': ['0x00']
+      '0x00412190': ['0x30', $]
+      '0x00412191': ['0x00']
+      '0x00412192': ['0x00']
+      '0x00412193': ['0x00']
+      '0x00412194': ['0x00']
+      '0x00412195': ['0x00']
+      '0x00412196': ['0x00']
+      '0x00412197': ['0x00']
+      '0xbefffb34': ['0x91']
+      '0xbefffb35': ['0x21']
+      '0xbefffb36': ['0x41']
+      '0xbefffb37': ['0x00']
+      '0xbefffb38': ['0x00']
+      '0xbefffb39': ['0x00']
+      '0xbefffb3a': ['0x00']
+      '0xbefffb3b': ['0x00']
+      '0xbefffb3c': ['0x00']
+      '0xbefffb3d': ['0x00']
+      '0xbefffb3e': ['0x00']
+      '0xbefffb3f': ['0x00']
+      '0xbefffb40': ['0x00']
+      '0xbefffb41': ['0x00']
+      '0xbefffb42': ['0x00']
+      '0xbefffb43': ['0x00']
+      '0xbefffb44': ['0x21']
+      '0xbefffb45': ['0x0a']
+      '0xbefffb46': ['0xef']
+      '0xbefffb47': ['0xb6']
+    regs:
+      r0: ['0x00412190']
+      r1: ['0x00000000']
+      r11: ['0xbefffb44']
+      r2: ['0xffffffff']
+      r3: ['0x00412198']
+      sp: ['0xbefffb30']
+      z: ['0x00000000']
+  leave:
+    addr: '0xb6ef0a20'
+    mems:
+      '0x0040060c': ['0x44']
+      '0x0040060d': ['0x01']
+      '0x0040060e': ['0x00']
+      '0x0040060f': ['0x00']
+      '0x00400610': ['0x3c']
+      '0x00400611': ['0x01']
+      '0x00400612': ['0x00']
+      '0x00400613': ['0x00']
+      '0x00400614': ['0x3c']
+      '0x00400615': ['0x01']
+      '0x00400616': ['0x00']
+      '0x00400617': ['0x00']
+      '0x00412190': ['0x30', $]
+      '0x00412191': ['0x00']
+      '0x00412192': ['0x00']
+      '0x00412193': ['0x00']
+      '0x00412194': ['0x00']
+      '0x00412195': ['0x00']
+      '0x00412196': ['0x00']
+      '0x00412197': ['0x00']
+      '0xbefffb34': ['0x91']
+      '0xbefffb35': ['0x21']
+      '0xbefffb36': ['0x41']
+      '0xbefffb37': ['0x00']
+      '0xbefffb38': ['0x00']
+      '0xbefffb39': ['0x00']
+      '0xbefffb3a': ['0x00']
+      '0xbefffb3b': ['0x00']
+      '0xbefffb3c': ['0x90']
+      '0xbefffb3d': ['0x21']
+      '0xbefffb3e': ['0x41']
+      '0xbefffb3f': ['0x00']
+      '0xbefffb40': ['0x00']
+      '0xbefffb41': ['0x00']
+      '0xbefffb42': ['0x00']
+      '0xbefffb43': ['0x00']
+      '0xbefffb44': ['0x21']
+      '0xbefffb45': ['0x0a']
+      '0xbefffb46': ['0xef']
+      '0xbefffb47': ['0xb6']
+    regs:
+      c: ['0x00000000']
+      n: ['0x00000001']
+      pc: ['0xb6ef0a20']
+      r0: ['0x00000000']
+      r1: ['0x00000000']
+      r11: ['0x00000000']
+      r2: ['0x004005e8']
+      r3: ['0x00000000']
+      sp: ['0xbefffb48']
+      v: ['0x00000000']
+      z: ['0x00000000']
+trace:
+- ['0x00400580', 00 30 a0 e1, 'mov r3, r0', 'nptr = (char *) calloc(BUF_LENGTH, sizeof(char));
+    // Line: 13']
+- ['0x00400584', 08 30 0b e5, 'str r3, [fp, #-8]', 'nptr = (char *) calloc(BUF_LENGTH,
+    sizeof(char)); // Line: 13']
+- ['0x00400588', 10 30 4b e2, 'sub r3, fp, #0x10', 'ret = strtoul(nptr, &endptr, 0);
+    // Line: 16']
+- ['0x0040058c', 00 20 a0 e3, 'mov r2, #0', 'ret = strtoul(nptr, &endptr, 0); // Line:
+    16']
+- ['0x00400590', 03 10 a0 e1, 'mov r1, r3', 'ret = strtoul(nptr, &endptr, 0); // Line:
+    16']
+- ['0x00400594', 08 00 1b e5, 'ldr r0, [fp, #-8]', 'ret = strtoul(nptr, &endptr, 0);
+    // Line: 16']
+- ['0x00400598', 01 fa a0 e3, 'mov pc, 0x1000', '// Hook: libc:strtoul (on_entry)']
+- ['0x00001000', 00 00 a0 e3, 'mov  r0, #0x0', '// Hook: libc:strtoul (on_leave)']
+- ['0x00001004', 00 00 40 e3, 'movt r0, #0x0', '// Hook: libc:strtoul (on_leave)']
+- ['0x00001008', 9c 25 00 e3, 'mov  r2, #0x59c', '// Hook: libc:strtoul (on_leave)']
+- ['0x0000100c', 40 20 40 e3, 'movt r2, #0x40', '// Hook: libc:strtoul (on_leave)']
+- ['0x00001010', 02 f0 a0 e1, 'mov pc, r2', '// Hook: libc:strtoul (on_leave)']
+- ['0x0040059c', 0c 00 0b e5, 'str r0, [fp, #-0xc]', 'ret = strtoul(nptr, &endptr,
+    0); // Line: 16']
+- ['0x004005a0', 08 20 1b e5, 'ldr r2, [fp, #-8]', 'printf("nptr    = %p: ''%s''\n",
+    nptr, nptr); // Line: 17']
+- ['0x004005a4', 08 10 1b e5, 'ldr r1, [fp, #-8]', 'printf("nptr    = %p: ''%s''\n",
+    nptr, nptr); // Line: 17']
+- ['0x004005a8', 5c 30 9f e5, 'ldr r3, [pc, #0x5c]', 'printf("nptr    = %p: ''%s''\n",
+    nptr, nptr); // Line: 17']
+- ['0x004005ac', 03 30 8f e0, 'add r3, pc, r3', 'printf("nptr    = %p: ''%s''\n",
+    nptr, nptr); // Line: 17']
+- ['0x004005b0', 03 00 a0 e1, 'mov r0, r3', 'printf("nptr    = %p: ''%s''\n", nptr,
+    nptr); // Line: 17']
+- ['0x004005b4', 01 fa a0 e3, 'mov pc, 0x1000', '// Hook: libc:printf (on_entry)']
+- ['0x00001000', b8 25 00 e3, 'mov  r2, #0x5b8', '// Hook: libc:printf (on_leave)']
+- ['0x00001004', 40 20 40 e3, 'movt r2, #0x40', '// Hook: libc:printf (on_leave)']
+- ['0x00001008', 02 f0 a0 e1, 'mov pc, r2', '// Hook: libc:printf (on_leave)']
+- ['0x004005b8', 10 30 1b e5, 'ldr r3, [fp, #-0x10]', 'printf("*endptr = %p: ''%s''\n",
+    endptr, endptr); // Line: 18']
+- ['0x004005bc', 10 20 1b e5, 'ldr r2, [fp, #-0x10]', 'printf("*endptr = %p: ''%s''\n",
+    endptr, endptr); // Line: 18']
+- ['0x004005c0', 03 10 a0 e1, 'mov r1, r3', 'printf("*endptr = %p: ''%s''\n", endptr,
+    endptr); // Line: 18']
+- ['0x004005c4', 44 30 9f e5, 'ldr r3, [pc, #0x44]', 'printf("*endptr = %p: ''%s''\n",
+    endptr, endptr); // Line: 18']
+- ['0x004005c8', 03 30 8f e0, 'add r3, pc, r3', 'printf("*endptr = %p: ''%s''\n",
+    endptr, endptr); // Line: 18']
+- ['0x004005cc', 03 00 a0 e1, 'mov r0, r3', 'printf("*endptr = %p: ''%s''\n", endptr,
+    endptr); // Line: 18']
+- ['0x004005d0', 01 fa a0 e3, 'mov pc, 0x1000', '// Hook: libc:printf (on_entry)']
+- ['0x00001000', d4 25 00 e3, 'mov  r2, #0x5d4', '// Hook: libc:printf (on_leave)']
+- ['0x00001004', 40 20 40 e3, 'movt r2, #0x40', '// Hook: libc:printf (on_leave)']
+- ['0x00001008', 02 f0 a0 e1, 'mov pc, r2', '// Hook: libc:printf (on_leave)']
+- ['0x004005d4', 0c 10 1b e5, 'ldr r1, [fp, #-0xc]', 'printf("ret     = %lu\n", ret);
+    // Line: 19']
+- ['0x004005d8', 34 30 9f e5, 'ldr r3, [pc, #0x34]', 'printf("ret     = %lu\n", ret);
+    // Line: 19']
+- ['0x004005dc', 03 30 8f e0, 'add r3, pc, r3', 'printf("ret     = %lu\n", ret); //
+    Line: 19']
+- ['0x004005e0', 03 00 a0 e1, 'mov r0, r3', 'printf("ret     = %lu\n", ret); // Line:
+    19']
+- ['0x004005e4', 01 fa a0 e3, 'mov pc, 0x1000', '// Hook: libc:printf (on_entry)']
+- ['0x00001000', e8 25 00 e3, 'mov  r2, #0x5e8', '// Hook: libc:printf (on_leave)']
+- ['0x00001004', 40 20 40 e3, 'movt r2, #0x40', '// Hook: libc:printf (on_leave)']
+- ['0x00001008', 02 f0 a0 e1, 'mov pc, r2', '// Hook: libc:printf (on_leave)']
+- ['0x004005e8', 0c 30 1b e5, 'ldr r3, [fp, #-0xc]', 'if(ret == 2) { // Line: 20']
+- ['0x004005ec', 02 00 53 e3, 'cmp r3, #2', 'if(ret == 2) { // Line: 20']
+- ['0x004005f0', 01 00 00 1a, 'bne #0x4005fc', 'if(ret == 2) { // Line: 20']
+- ['0x004005fc', 00 30 a0 e3, 'mov r3, #0', 'return 0; // Line: 23']
+- ['0x00400600', 03 00 a0 e1, 'mov r0, r3', '} // Line: 24']
+- ['0x00400604', 04 d0 4b e2, 'sub sp, fp, #4', '} // Line: 24']
+- ['0x00400608', 00 88 bd e8, 'pop {fp, pc}', '} // Line: 24']
