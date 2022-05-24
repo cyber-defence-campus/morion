@@ -7,8 +7,11 @@ memcpy_TGT = bin/memcpy
 strlen_SRC = src/strlen/strlen.c
 strlen_TGT = bin/strlen
 
+strtoul_SRC = src/strtoul/strtoul.c
+strtoul_TGT = bin/strtoul
+
 .PHONY: all
-all: memcpy strlen
+all: memcpy strlen strtoul
 
 memcpy: $(memcpy_SRC)
 	$(CC) $(CFLAGS) -o $(memcpy_TGT) $(memcpy_SRC)
@@ -16,6 +19,9 @@ memcpy: $(memcpy_SRC)
 strlen: $(strlen_SRC)
 	$(CC) $(CFLAGS) -o $(strlen_TGT) $(strlen_SRC)
 
+strtoul: $(strtoul_SRC)
+	$(CC) $(CFLAGS) -o $(strtoul_TGT) $(strtoul_SRC)
+
 .PHONY: clean
 clean:
-	rm -f $(memcpy_TGT) $(strlen_TGT)
+	rm -f $(memcpy_TGT) $(strlen_TGT) $(strtoul_TGT)
