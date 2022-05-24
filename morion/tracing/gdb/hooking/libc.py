@@ -38,6 +38,68 @@ class memcpy(FunctionHook):
         return []
 
 
+class printf(FunctionHook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "int printf(const char *restrict format, ...);"
+        return
+
+
+class putchar(FunctionHook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "int putchar(int c);"
+        return
+    
+
+class strtoul(FunctionHook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                nptr = GdbHelper.get_register_value("r0")
+                nptr_val = GdbHelper.get_memory_string(nptr)
+                self.endptr = GdbHelper.get_register_value("r1")
+                base = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\tnptr  =0x{nptr:x} ('{nptr_val:s}')")
+                self._logger.debug(f"\tendptr=0x{self.endptr:x}")
+                self._logger.debug(f"\tbase  ={base:d}")
+                # Inject assembly
+                code = []
+                return self._arm_assemble(code, is_entry=True, comment=f"{self._name:s} (on_entry)")
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                ret = GdbHelper.get_register_value("r0")
+                endptr_val = GdbHelper.get_memory_string(self.endptr)
+                self._logger.debug(f"\tret={ret:d}")
+                self._logger.debug(f"\t*endptr='{endptr_val:s}'")
+                # TODO: endptr: _arm_mov_to_mem
+                # Inject assembly
+                code = self._arm_mov_to_reg("r0", ret)
+                return self._arm_assemble(code, is_entry=False, comment=f"{self._name:s} (on_leave)")
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+        return []
+
+    
 class strlen(FunctionHook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
