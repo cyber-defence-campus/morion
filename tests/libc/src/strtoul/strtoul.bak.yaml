@@ -1,7 +1,11 @@
 hooks:
   libc:
+    printf:
+    - {entry: '0x4005b4', leave: '0x4005b8'}
+    - {entry: '0x4005d0', leave: '0x4005d4'}
+    - {entry: '0x4005e4', leave: '0x4005e8'}
     strtoul:
-    - {entry: '0x40056c', leave: '0x400570'}
+    - {entry: '0x400598', leave: '0x40059c'}
 states:
   entry:
     mems:
