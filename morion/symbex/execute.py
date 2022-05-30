@@ -6,6 +6,7 @@ import inspect
 import IPython
 import os
 import pkgutil
+import string
 import sys
 from   morion.log                           import Logger
 from   morion.map                           import AddressMapper
@@ -15,6 +16,22 @@ from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction
 from   triton                               import MemoryAccess, MODE, TritonContext
 from   typing                               import List
+
+
+class Helper:
+
+    @staticmethod
+    def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
+        s = ""
+        addr = mem_addr
+        while True:
+            value = ctx.getConcreteMemoryValue(addr)
+            char = chr(value)
+            if char not in string.printable: char = ""
+            s += char
+            if not value: break
+            addr += CPUSIZE.BYTE
+        return s
 
 
 class Executor:
