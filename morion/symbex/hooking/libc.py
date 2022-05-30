@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 from   morion.log                import Logger
+from   morion.symbex.execute     import Helper
 from   morion.symbex.hooking.lib import FunctionHook
 from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
@@ -61,11 +62,13 @@ class strtoul(FunctionHook):
             if arch == ARCH.ARM32:
                 # TODO: Make other classes similar to this one!
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._nptr = Helper.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
-                self._logger.debug(f"\tnptr   = 0x{self.nptr:08x}")
-                self._logger.debug(f"\tendptr = 0x{self.endptr:08x}")
-                self._logger.debug(f"\tbase   = {self.base:d}")
+                self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
+                self._logger.debug(f"\t*nptr    = '{self._nptr:s}'")
+                self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
+                self._logger.debug(f"\tbase     = {self.base:d}")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -77,56 +80,31 @@ class strtoul(FunctionHook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Concrete result
-                endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
-                # TODO: Read string from memory (Make a helper function)
+                _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
+                __endptr = Helper.get_memory_string(ctx, _endptr)
                 ret = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._logger.debug(f"\tret    = {ret:d}")
-
-                # Read string from memory
-                mem_addr = self.nptr
-                nptr_val = ""
-                while True:
-                    mem_val = ctx.getConcreteMemoryValue(mem_addr)
-                    char = chr(mem_val)
-                    if char not in string.printable:
-                        char = ""
-                    nptr_val += char
-                    if not mem_val: break
-                    mem_addr += CPUSIZE.BYTE
 
                 # Parse string (match spaces, sign, prefix and value)
-                match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', nptr_val)
+                match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self._nptr)
                 spaces, sign, prefix, value = match.groups()
 
-                # TODO: Base ([2, 36] or 0)
-
-                # Base must be between 2 and 36 inclusive or 0
+                # TODO: Determine base ([2, 36] or 0)
                 if not (self.base >= 2 and self.base <= 36 or self.base == 0):
-                    self._logger.warning(f"Invalid base: {self.base:d}")
+                    self._logger.warning(f"strtoul: Base {self.base:d} is invalid.")
                     return
-
-                # With prefix
-                if prefix:
-                    # Hexadecimal
-                    if self.base == 0 or self.base == 16:
-                        pass
-                    # Invalid
+                base = self.base
+                if base == 0:
+                    if prefix:
+                        base = 16
+                    elif value.startswith("0"):
+                        base = 8
                     else:
-                        self._logger.warning(f"Invalid string: '{nptr_val:s}'")
-                # Without prefix
-                else:
-                    if self.base == 0:
-                        # Octal
-                        if value.startswith("0"):
-                            pass
-                        # Decimal
-                        else:
-                            pass
-                    else:
-                        # Otherwise
-                        pass
-                # TODO
-                base = 10
+                        base = 10
+                
+                self._logger.debug(f"\t*endptr  = 0x{_endptr:08x}")
+                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\tbase     = {base:d}")
+                self._logger.debug(f"\tret      = {ret:d}")
                 
                 # Symbolic result
                 ast = ctx.getAstContext()
@@ -134,23 +112,31 @@ class strtoul(FunctionHook):
                 ast_9 = ast.bv(ord("9"), CPUSIZE.BYTE_BIT)
                 ast_a = ast.bv(ord("a"), CPUSIZE.BYTE_BIT)
                 ast_A = ast.bv(ord("A"), CPUSIZE.BYTE_BIT)
-                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT) # TODO: What size does unsinged long have on ARMv7?
-                for i in range(0, len(nptr_val)):
-                    ast_ck = ast.bv(ord(nptr_val[i]), CPUSIZE.BYTE_BIT)
+                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
+                # Iterate valid characters
+                for i in range(0, _endptr-self.nptr):
+                    ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + i, CPUSIZE.BYTE))
                     ast_ak = ast.ite(
-                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),
+                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # if c is a valid digit for the given base
                         ast_ck - ast_0,
                         ast.ite(
-                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),
+                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # if c is a valid lower-case letter for the given base
                             ast_ck - ast_a + 10,
-                            ast_ck - ast_A + 10
+                            ast.ite(
+                                ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # if c is a valid upper-case letter for the given base
+                                ast_ck - ast_A + 10,
+                                ast.ite(                                                        # constrain valid symbols
+                                    ast_ck < ast_0,
+                                    ast_0,
+                                    ast_0 + base -1
+                                )
+                            )
                         )
                     )
                     ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
                     ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** i))
                 sym_exp = ctx.newSymbolicExpression(ast_sum)
                 ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
-                import IPython; IPython.embed(header="strtoul (leave)")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
