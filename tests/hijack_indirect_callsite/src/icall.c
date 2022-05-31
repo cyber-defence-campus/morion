@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     // Calculate hash
     hash(argv[2], icall.hash);
-    i = strtoul(argv[1], NULL, 0);
+    i = strtoul(argv[1], NULL, 10);
 
     // Print in forward or reverse order
     printf("Calling %p\n", (void *)icall.functions[i]);
