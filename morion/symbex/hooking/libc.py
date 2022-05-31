@@ -49,6 +49,14 @@ class memcpy(FunctionHook):
         return
 
 
+class printf(FunctionHook):
+    
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "int printf(const char *restrict format, ...);"
+        return
+
+
 class strtoul(FunctionHook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
@@ -105,7 +113,7 @@ class strtoul(FunctionHook):
                 self._logger.debug(f"\t**endptr = '{__endptr:s}'")
                 self._logger.debug(f"\tbase     = {base:d}")
                 self._logger.debug(f"\tret      = {ret:d}")
-                
+
                 # Symbolic result
                 ast = ctx.getAstContext()
                 ast_0 = ast.bv(ord("0"), CPUSIZE.BYTE_BIT)
@@ -117,15 +125,15 @@ class strtoul(FunctionHook):
                 for i in range(0, _endptr-self.nptr):
                     ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + i, CPUSIZE.BYTE))
                     ast_ak = ast.ite(
-                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # if c is a valid digit for the given base
+                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
                         ast_ck - ast_0,
                         ast.ite(
-                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # if c is a valid lower-case letter for the given base
+                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # If c is a valid lower-case letter for the given base
                             ast_ck - ast_a + 10,
                             ast.ite(
-                                ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # if c is a valid upper-case letter for the given base
+                                ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # If c is a valid upper-case letter for the given base
                                 ast_ck - ast_A + 10,
-                                ast.ite(                                                        # constrain valid symbols
+                                ast.ite(                                                        # Constrain valid symbols
                                     ast_ck < ast_0,
                                     ast_0,
                                     ast_0 + base -1
@@ -134,7 +142,7 @@ class strtoul(FunctionHook):
                         )
                     )
                     ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
-                    ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** i))
+                    ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** (_endptr-self.nptr-1-i)))
                 sym_exp = ctx.newSymbolicExpression(ast_sum)
                 ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
                 return
