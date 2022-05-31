@@ -16,6 +16,9 @@ states:
   entry:
     addr: '0x00400684'
     mems:
+      '0xbefffdb3': ['0x30', $]
+      '0xbefffdb4': ['0x30', $]
+      '0xbefffdb5': ['0x30', $]
       '0xbefffdb6': ['0x30', $]
       '0xbefffdb7': ['0x00']
       '0xbefffdb8': ['0x68', $]
