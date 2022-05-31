@@ -226,6 +226,7 @@ class Executor:
         self.stepping = args.stepping
         VulnerabilityAnalysis.disallow_user_inputs = args.disallow_user_inputs
         VulnerabilityAnalysis.analysis_history = {}
+        inside_hook = False
         pc = self._recorder.get_trace_start_address()
         for addr, opcode, disassembly, comment in self._recorder.get_trace():
             # Decode instruction
@@ -250,9 +251,11 @@ class Executor:
                 if hook_return_addr is not None:
                     self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
                     self._logger.debug(f"---       '{hook_fun.__self__.synopsis:s}'")
+                    inside_hook = True
                 hook_fun(self.ctx)
-                if hook_return_addr is None:
+                if hook_return_addr is None and inside_hook:
                     self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
+                    inside_hook = False
 
             # Symbolic execution
             if not self._step(addr, opcode, disassembly, comment):
