@@ -1,0 +1,34 @@
+hooks:
+  libc:
+    printf:
+    - {entry: '0x4006c0', leave: '0x4006c4'}
+    - {entry: '0x4006e8', leave: '0x4006ec'}
+    - {entry: '0x4008ac', leave: '0x4008b0'}
+    - {entry: '0x4008b8', leave: '0x4008bc'}
+    putchar:
+    - {entry: '0x4005f4', leave: '0x4006d0'}
+    strlen:
+    - {entry: '0x40097c', leave: '0x400980'}
+    - {entry: '0x4009b8', leave: '0x4009bc'}
+    strtoul:
+    - {entry: '0x4006ac', leave: '0x4006b0'}
+states:
+  entry:
+    addr: '0x00400684'
+    mems:
+      '0xbefffdb6': ['0x30', $]
+      '0xbefffdb7': ['0x00']
+      '0xbefffdb8': ['0x68', $]
+      '0xbefffdb9': ['0x61', $]
+      '0xbefffdba': ['0x73', $]
+      '0xbefffdbb': ['0x68', $]
+      '0xbefffdbc': ['0x00']
+      '0xbefffdbd': ['0x70', $]
+      '0xbefffdbe': ['0x61', $]
+      '0xbefffdbf': ['0x73', $]
+      '0xbefffdc0': ['0x73', $]
+      '0xbefffdc1': ['0x77', $]
+      '0xbefffdc2': ['0x6f', $]
+      '0xbefffdc3': ['0x72', $]
+      '0xbefffdc4': ['0x64', $]
+      '0xbefffdc5': ['0x00']
