@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 from morion.log import Logger
-from triton     import TritonContext
+from triton     import ARCH, TritonContext
 
 
 class FunctionHook:
@@ -33,7 +33,7 @@ class FunctionHook:
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            symbex.logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
         return
 
     def on_leave(self, ctx: TritonContext) -> None:
@@ -51,7 +51,7 @@ class FunctionHook:
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            symbex.logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
         return
 
     
