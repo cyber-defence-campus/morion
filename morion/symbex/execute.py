@@ -89,7 +89,7 @@ class Executor:
                     if not isinstance(mem_value, int):
                         mem_value = int(mem_value, base=0)
                     self.ctx.setConcreteMemoryValue(mem_addr, mem_value)
-                    self._logger.debug(f"\t0x{mem_addr:x}=0x{mem_value:x}")
+                    self._logger.debug(f"\t0x{mem_addr:08x}=0x{mem_value:02x}")
             except:
                 continue
         # Set symbolic register values
@@ -241,6 +241,8 @@ class Executor:
             # Validate program counter
             if addr != pc:
                 self._logger.critical("Symbolic execution is desynchronized!")
+                self._logger.critical(f"\tNext PC concrete: 0x{addr:08x}")
+                self._logger.critical(f"\tNext PC symbolic: 0x{pc:08x}")
                 break
 
             # Execute hook functions
