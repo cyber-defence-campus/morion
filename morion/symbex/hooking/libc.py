@@ -122,7 +122,7 @@ class strtoul(FunctionHook):
                 ast_A = ast.bv(ord("A"), CPUSIZE.BYTE_BIT)
                 ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
                 # Iterate valid characters
-                for i in range(0, _endptr-self.nptr):
+                for i in range(0, len(self._nptr)):
                     ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + i, CPUSIZE.BYTE))
                     ast_ak = ast.ite(
                         ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
@@ -142,7 +142,7 @@ class strtoul(FunctionHook):
                         )
                     )
                     ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
-                    ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** (_endptr-self.nptr-1-i)))
+                    ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** (len(self._nptr)-1-i)))
                 sym_exp = ctx.newSymbolicExpression(ast_sum)
                 ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
                 return
