@@ -96,11 +96,11 @@ class strtoul(FunctionHook):
                 match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self._nptr)
                 spaces, sign, prefix, value = match.groups()
 
-                # TODO: Determine base ([2, 36] or 0)
-                if not (self.base >= 2 and self.base <= 36 or self.base == 0):
-                    self._logger.warning(f"strtoul: Base {self.base:d} is invalid.")
-                    return
+                # Determine base ([2, 36] or 0)
                 base = self.base
+                if not (base >= 2 and base <= 36 or base == 0):
+                    self._logger.warning(f"strtoul: Base {base:d} is invalid.")
+                    return
                 if base == 0:
                     if prefix:
                         base = 16
