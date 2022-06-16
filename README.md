@@ -19,11 +19,11 @@ cmake ..
 make -j4
 sudo make install
 ```
-Note: The Triton library is put into `/usr/local/lib/python3.X/site-packages/`, which is the default location for non-Debian Python packages built from source. Debian-based systems by default put Python packages built from source into `/usr/local/lib/python3.X/dist-packages`. To cope with this, you might create the following link on Debian-based systems (here for Python version 3.8):
+Note: The Triton library is put into `/usr/local/lib/python3.X/site-packages/`, which is the default location for non-Debian Python packages built from source. Debian-based systems by default put Python packages built from source into `/usr/local/lib/python3.X/dist-packages`. To cope with this, you might create the following link on Debian-based systems (here for Python version 3.10):
 ```shell
 sudo ln -s\
-  /usr/local/lib/python3.8/site-packages/triton.so \
-  /usr/local/lib/python3.8/dist-packages/triton.so
+  /usr/local/lib/python3.10/site-packages/triton.so \
+  /usr/local/lib/python3.10/dist-packages/triton.so
 ```
 ### Morion
 1. Clone the repository:
