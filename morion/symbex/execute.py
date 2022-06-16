@@ -13,7 +13,7 @@ from   morion.map                           import AddressMapper
 from   morion.record                        import Recorder
 from   morion.symbex                        import hooking
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
-from   triton                               import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction
+from   triton                               import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction
 from   triton                               import MemoryAccess, MODE, TritonContext
 from   typing                               import List
 
@@ -206,7 +206,7 @@ class Executor:
             self.ctx.disassembly(inst)
 
             # Build instruction semantics
-            is_supported = self.ctx.buildSemantics(inst)
+            is_supported = self.ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
 
             # Log instruction
             line = [f"0x{inst.getAddress():08x} {inst.getDisassembly():s}", comment]

@@ -11,7 +11,7 @@ from   morion.log         import Logger
 from   morion.map         import AddressMapper
 from   morion.record      import Recorder
 from   morion.tracing.gdb import hooking
-from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, Instruction, MODE, OPERAND, TritonContext
+from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction, MODE, OPERAND, TritonContext
 
 
 logger = Logger()
@@ -215,7 +215,7 @@ class GdbTracer:
             return False
         # Building semantics
         try:
-            supported = ctx.buildSemantics(inst)
+            supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
         except Exception as exc:
             logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
             return False
