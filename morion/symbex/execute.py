@@ -286,7 +286,7 @@ class Executor:
             reg = self.ctx.getRegister(reg_name)
             reg_value = self.ctx.getConcreteRegisterValue(reg)
             byte_mask = self._is_register_symbolic(reg_name)
-            reg_mask = "".join("$$" if b else "XX" for b in byte_mask)
+            reg_mask = "".join("$" if b else "X" for b in byte_mask)
             # Log symbolic registers
             if "$" in reg_mask:
                 self._logger.info(f"\t{reg_name:s}={reg_mask:s}", color="magenta")
@@ -311,7 +311,7 @@ class Executor:
         for mem_addr in mem_addrs:
             mem_value = self.ctx.getConcreteMemoryValue(mem_addr)
             byte_mask = self._is_memory_symbolic(mem_addr)
-            mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
+            mem_mask = "".join("$" if b else "X" for b in byte_mask)
             # Log symbolic memory
             if "$" in mem_mask:
                 self._logger.info(f"\t0x{mem_addr:x}={mem_mask:s}", color="magenta")
