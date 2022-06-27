@@ -361,20 +361,28 @@ class GdbTracer:
                 try:
                     reg_value = int(reg_value, base=16)
                     GdbHelper.set_register_value(reg_name, reg_value)
-                    logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
                 except:
-                    pass
+                    reg_value = self._get_register_value(reg_name)
+                self._accessed_regs[reg_name] = reg_value
+                self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
+                logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
         # Set memory values
         logger.debug("Mems:")
         for mem_addr, mem_values in self._recorder._trace["states"]["entry"]["mems"].items():
+            try:
+                mem_addr = int(mem_addr, base=16)
+            except:
+                continue
             for mem_value in mem_values:
                 try:
-                    mem_addr = int(mem_addr, base=16)
                     mem_value = int(mem_value, base=16)
                     GdbHelper.set_memory_value(mem_addr, mem_value)
-                    logger.debug(f"\t0x{mem_addr:x} = 0x{mem_value:x}")
                 except:
-                    pass
+                    mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
+                self._accessed_mems[mem_addr] = mem_value
+                self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
+                logger.debug(f"\t0x{mem_addr:x} = 0x{mem_value:x}")
+                
         # Set hooks
         logger.debug("Hooks:")
         hooks = self._recorder._trace.get("hooks", {})
