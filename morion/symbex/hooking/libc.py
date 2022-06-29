@@ -113,13 +113,6 @@ class strtol(FunctionHook):
                 self._logger.debug(f"\tbase     = {base:d}")
                 self._logger.debug(f"\tret      = {ret:d}")
 
-                # TODO: Symbolic result
-                #  -  [spaces][sign][prefix][valid symbols][invalid symbols]nullbyte
-                # [ ] ast_factor can overflow (e.g. with many leading spaces) and result in ast_factor == 0
-                # [ ] Change ast_factor / division implementation
-                # [ ] Clean, document and test code
-                # [ ] Commit to new branch
-
                 # ASTs or relevant ASCII characters
                 ast = ctx.getAstContext()
                 ast_0 = ast.bv(ord("0"), CPUSIZE.BYTE_BIT)
@@ -132,16 +125,12 @@ class strtol(FunctionHook):
                 ast_plus = ast.bv(ord("+"), CPUSIZE.BYTE_BIT)
                 ast_minus = ast.bv(ord("-"), CPUSIZE.BYTE_BIT)
 
-                # 
+                # Count characters ([spaces][sign][prefix][valid symbols][invalid symbols]nullbyte)
                 ast_space_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
                 ast_sign_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
                 ast_sign = ast.bv(+1, CPUSIZE.DWORD_BIT)
                 ast_prefix_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
                 ast_valid_symbols_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
-                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
-                ast_factor = ast.bv(base ** len(self._nptr), CPUSIZE.DWORD_BIT)
-
-                # 
                 for k in range(0, len(self._nptr)):
                     # Get ASTs of characters k and k+1
                     ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
@@ -219,6 +208,13 @@ class strtol(FunctionHook):
                         )
                     )
 
+                # Calculate (signed) sum
+                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_factor = ast.bv(1, CPUSIZE.DWORD_BIT)   # TODO: ast_factor might overflow when having too many valid symbols
+                for k in reversed(range(0, len(self._nptr))):
+                    # Get AST of character k
+                    ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
+
                     # Transform character to digit
                     ast_ak = ast.ite(
                         ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
@@ -235,9 +231,6 @@ class strtol(FunctionHook):
                     )
                     ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
 
-                    # Calculate factor (base^k)
-                    ast_factor = ast.bvsdiv(ast_factor, ast.bv(base, CPUSIZE.DWORD_BIT))
-
                     # Calculate (signed) sum
                     ast_sum = ast.bvadd(
                         ast_sum,
@@ -250,24 +243,56 @@ class strtol(FunctionHook):
                             ast.bv(0, CPUSIZE.DWORD_BIT)
                         )
                     )
-                    ast_sum = ast.bvsdiv(
-                        ast_sum,
+
+                    # Calculate factor (base^k)
+                    ast_factor = ast.bvmul(
+                        ast_factor,
                         ast.ite(
-                            ast.lnot(
-                                ast.land([
-                                    k >= ast_space_cnt + ast_sign_cnt + ast_prefix_cnt,
-                                    k <  ast_space_cnt + ast_sign_cnt + ast_prefix_cnt + ast_valid_symbols_cnt
-                                ])
-                            ),
+                            ast.land([
+                                k >= ast_space_cnt + ast_sign_cnt + ast_prefix_cnt,
+                                k <  ast_space_cnt + ast_sign_cnt + ast_prefix_cnt + ast_valid_symbols_cnt
+                            ]),
                             ast.bv(base, CPUSIZE.DWORD_BIT),
                             ast.bv(1, CPUSIZE.DWORD_BIT)
                         )
                     )
+                    
+                # Debug output
+                self._logger.debug(f"---")
+                space_cnt = ctx.evaluateAstViaSolver(ast_space_cnt)
+                self._logger.debug(f"\tNo. Space Chars       : {space_cnt:d}")
+                sign_cnt = ctx.evaluateAstViaSolver(ast_sign_cnt)
+                self._logger.debug(f"\tNo. Sign Chars        : {sign_cnt:d}")
+                prefix_cnt = ctx.evaluateAstViaSolver(ast_prefix_cnt)
+                self._logger.debug(f"\tNo. Prefix Chars      : {prefix_cnt:d}")
+                valid_symbols_cnt = ctx.evaluateAstViaSolver(ast_valid_symbols_cnt)
+                self._logger.debug(f"\tNo. Valid Symbol Chars: {valid_symbols_cnt:d}")
+                result = ctx.evaluateAstViaSolver(ast_sum)
+                self._logger.debug(f"\tResult                : {result:d}")
+                self._logger.debug(f"---")
+
+                # TODO: Experiments
+                from timeit import default_timer as timer
+                self._logger.debug(f"--- Experimentation:")
+                self._logger.debug(f"\tString Length                        : {len(self._nptr):d}")
+                nodes_cnt = str(ast.unroll(ast_sum)).count("(")
+                self._logger.debug(f"\tNo. AST Nodes                        : {nodes_cnt:d}")
+                time_start = timer()
+                ast_sum_simplified = ctx.simplify(ast_sum, solver=False)
+                time_diff = timer() - time_start
+                nodes_cnt = str(ast.unroll(ast_sum_simplified)).count("(")
+                self._logger.debug(f"\tNo. AST Nodes (simplified w/o solver): {nodes_cnt:d} ({time_diff:.9f}s)")
+                time_start = timer()
+                ast_sum_solver_simplified = ctx.simplify(ast_sum, solver=True)
+                time_diff = timer() - time_start
+                nodes_cnt = str(ast.unroll(ast_sum_solver_simplified)).count("(")
+                self._logger.debug(f"\tNo. AST Nodes (simplified w/  solver): {nodes_cnt:d} ({time_diff:.9f}s)")
+                self._logger.debug(f"---")
+##                import IPython; IPython.embed(header="Debug...")
 
                 # Assign symbolic result to return register
                 sym_exp = ctx.newSymbolicExpression(ast_sum)
                 ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
-                import IPython; IPython.embed()
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
