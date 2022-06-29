@@ -73,7 +73,7 @@ class strtol(FunctionHook):
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
                 self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
-                self._logger.debug(f"\t*nptr    = '{self._nptr:s}'")
+                self._logger.debug(f"\t*nptr    = '{self._nptr:s}' [{len(self._nptr):d}]")
                 self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
                 self._logger.debug(f"\tbase     = {self.base:d}")
                 return
@@ -109,7 +109,7 @@ class strtol(FunctionHook):
                         base = 10
                 
                 self._logger.debug(f"\t*endptr  = 0x{_endptr:08x}")
-                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\t**endptr = '{__endptr:s}' [{len(__endptr):d}]")
                 self._logger.debug(f"\tbase     = {base:d}")
                 self._logger.debug(f"\tret      = {ret:d}")
 
@@ -271,25 +271,6 @@ class strtol(FunctionHook):
                 self._logger.debug(f"\tResult                : {result:d}")
                 self._logger.debug(f"---")
 
-                # TODO: Experiments
-                from timeit import default_timer as timer
-                self._logger.debug(f"--- Experimentation:")
-                self._logger.debug(f"\tString Length                        : {len(self._nptr):d}")
-                nodes_cnt = str(ast.unroll(ast_sum)).count("(")
-                self._logger.debug(f"\tNo. AST Nodes                        : {nodes_cnt:d}")
-                time_start = timer()
-                ast_sum_simplified = ctx.simplify(ast_sum, solver=False)
-                time_diff = timer() - time_start
-                nodes_cnt = str(ast.unroll(ast_sum_simplified)).count("(")
-                self._logger.debug(f"\tNo. AST Nodes (simplified w/o solver): {nodes_cnt:d} ({time_diff:.9f}s)")
-                time_start = timer()
-                ast_sum_solver_simplified = ctx.simplify(ast_sum, solver=True)
-                time_diff = timer() - time_start
-                nodes_cnt = str(ast.unroll(ast_sum_solver_simplified)).count("(")
-                self._logger.debug(f"\tNo. AST Nodes (simplified w/  solver): {nodes_cnt:d} ({time_diff:.9f}s)")
-                self._logger.debug(f"---")
-##                import IPython; IPython.embed(header="Debug...")
-
                 # Assign symbolic result to return register
                 sym_exp = ctx.newSymbolicExpression(ast_sum)
                 ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
@@ -318,7 +299,7 @@ class strtoul(FunctionHook):
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
                 self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
-                self._logger.debug(f"\t*nptr    = '{self._nptr:s}'")
+                self._logger.debug(f"\t*nptr    = '{self._nptr:s}' [{len(self._nptr):d}]")
                 self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
                 self._logger.debug(f"\tbase     = {self.base:d}")
                 return
@@ -354,7 +335,7 @@ class strtoul(FunctionHook):
                         base = 10
                 
                 self._logger.debug(f"\t*endptr  = 0x{_endptr:08x}")
-                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\t**endptr = '{__endptr:s}' [{len(__endptr):d}]")
                 self._logger.debug(f"\tbase     = {base:d}")
                 self._logger.debug(f"\tret      = {ret:d}")
 
