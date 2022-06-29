@@ -57,6 +57,224 @@ class printf(FunctionHook):
         return
 
 
+class strtol(FunctionHook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "long strtol(const char *restrict nptr, char **restrict endptr, int base);"
+        return
+
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._nptr = Helper.get_memory_string(ctx, self.nptr)
+                self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
+                self._logger.debug(f"\t*nptr    = '{self._nptr:s}'")
+                self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
+                self._logger.debug(f"\tbase     = {self.base:d}")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+        return
+
+    def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Concrete result
+                _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
+                __endptr = Helper.get_memory_string(ctx, _endptr)
+                ret = ctx.getConcreteRegisterValue(ctx.registers.r0)
+
+                # Parse string (match spaces, sign, prefix and value)
+                match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self._nptr)
+                spaces, sign, prefix, value = match.groups()
+
+                # Determine base ([2, 36] or 0)
+                base = self.base
+                if not (base >= 2 and base <= 36 or base == 0):
+                    self._logger.warning(f"strtoul: Base {base:d} is invalid.")
+                    return
+                if base == 0:
+                    if prefix:
+                        base = 16
+                    elif value.startswith("0"):
+                        base = 8
+                    else:
+                        base = 10
+                
+                self._logger.debug(f"\t*endptr  = 0x{_endptr:08x}")
+                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\tbase     = {base:d}")
+                self._logger.debug(f"\tret      = {ret:d}")
+
+                # TODO: Symbolic result
+                #  -  [spaces][sign][prefix][valid symbols][invalid symbols]nullbyte
+                # [ ] ast_factor can overflow (e.g. with many leading spaces) and result in ast_factor == 0
+                # [ ] Change ast_factor / division implementation
+                # [ ] Clean, document and test code
+                # [ ] Commit to new branch
+
+                # ASTs or relevant ASCII characters
+                ast = ctx.getAstContext()
+                ast_0 = ast.bv(ord("0"), CPUSIZE.BYTE_BIT)
+                ast_9 = ast.bv(ord("9"), CPUSIZE.BYTE_BIT)
+                ast_a = ast.bv(ord("a"), CPUSIZE.BYTE_BIT)
+                ast_A = ast.bv(ord("A"), CPUSIZE.BYTE_BIT)
+                ast_x = ast.bv(ord("x"), CPUSIZE.BYTE_BIT)
+                ast_X = ast.bv(ord("X"), CPUSIZE.BYTE_BIT)
+                ast_space = ast.bv(ord(" "), CPUSIZE.BYTE_BIT)
+                ast_plus = ast.bv(ord("+"), CPUSIZE.BYTE_BIT)
+                ast_minus = ast.bv(ord("-"), CPUSIZE.BYTE_BIT)
+
+                # 
+                ast_space_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_sign_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_sign = ast.bv(+1, CPUSIZE.DWORD_BIT)
+                ast_prefix_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_valid_symbols_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
+                ast_factor = ast.bv(base ** len(self._nptr), CPUSIZE.DWORD_BIT)
+
+                # 
+                for k in range(0, len(self._nptr)):
+                    # Get ASTs of characters k and k+1
+                    ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
+                    ast_ck1 = ctx.getMemoryAst(MemoryAccess(self.nptr + k + 1, CPUSIZE.BYTE))
+                    
+                    # Count leading space characters
+                    ast_space_cnt = ast.bvadd(
+                        ast_space_cnt,
+                        ast.ite(
+                            ast.land([
+                                k == ast_space_cnt,                                                     # Ensure spaces are leading
+                                ast_ck == ast_space
+                            ]),
+                            ast.bv(1, CPUSIZE.DWORD_BIT),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+                    
+                    # Count sign character
+                    ast_sign_cnt = ast.bvadd(
+                        ast_sign_cnt,
+                        ast.ite(
+                            ast.land([
+                                k == ast_space_cnt,                                                     # Ensure sign follows spaces
+                                ast.lor([ast_ck == ast_plus, ast_ck == ast_minus])
+                            ]),
+                            ast.bv(1, CPUSIZE.DWORD_BIT),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+                    
+                    # Determine sign
+                    ast_sign = ast.ite(
+                        ast.land([
+                            k == ast_space_cnt,
+                            ast_ck == ast_minus
+                        ]),
+                        ast.bv(-1, CPUSIZE.DWORD_BIT),
+                        ast_sign
+                    )
+                    
+                    #  Count prefix characters
+                    ast_prefix_cnt = ast.bvadd(
+                        ast_prefix_cnt,
+                        ast.ite(
+                            ast.land([
+                                k == ast_space_cnt + ast_sign_cnt,                                      # Ensure prefix follows the sign
+                                ast_ck == ast_0,
+                                ast.lor([ast_ck1 == ast_x, ast_ck1 == ast_X])
+                            ]),
+                            ast.bv(2, CPUSIZE.DWORD_BIT),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+                    
+                    # Count valid symbol characters
+                    ast_valid_symbols_cnt = ast.bvadd(
+                        ast_valid_symbols_cnt,
+                        ast.ite(
+                            k == ast_space_cnt + ast_sign_cnt + ast_prefix_cnt + ast_valid_symbols_cnt, # Ensure valid symbols follow prefix
+                            ast.ite(
+                                ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
+                                ast.bv(1, CPUSIZE.DWORD_BIT),
+                                ast.ite(
+                                    ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # If c is a valid lower-case letter for the given base
+                                    ast.bv(1, CPUSIZE.DWORD_BIT),
+                                    ast.ite(
+                                        ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # If c is a valid upper-case letter for the given base
+                                        ast.bv(1, CPUSIZE.DWORD_BIT),
+                                        ast.bv(0, CPUSIZE.DWORD_BIT)
+                                    )
+                                )
+                            ),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+
+                    # Transform character to digit
+                    ast_ak = ast.ite(
+                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
+                        ast_ck - ast_0,
+                        ast.ite(
+                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # If c is a valid lower-case letter for the given base
+                            ast_ck - ast_a + 10,
+                            ast.ite(
+                                ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # If c is a valid upper-case letter for the given base
+                                ast_ck - ast_A + 10,
+                                ast_0
+                            )
+                        )
+                    )
+                    ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
+
+                    # Calculate factor (base^k)
+                    ast_factor = ast.bvsdiv(ast_factor, ast.bv(base, CPUSIZE.DWORD_BIT))
+
+                    # Calculate (signed) sum
+                    ast_sum = ast.bvadd(
+                        ast_sum,
+                        ast.ite(
+                            ast.land([
+                                k >= ast_space_cnt + ast_sign_cnt + ast_prefix_cnt,
+                                k <  ast_space_cnt + ast_sign_cnt + ast_prefix_cnt + ast_valid_symbols_cnt
+                            ]),
+                            ast_ak * ast_factor * ast_sign,
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+                    ast_sum = ast.bvsdiv(
+                        ast_sum,
+                        ast.ite(
+                            ast.lnot(
+                                ast.land([
+                                    k >= ast_space_cnt + ast_sign_cnt + ast_prefix_cnt,
+                                    k <  ast_space_cnt + ast_sign_cnt + ast_prefix_cnt + ast_valid_symbols_cnt
+                                ])
+                            ),
+                            ast.bv(base, CPUSIZE.DWORD_BIT),
+                            ast.bv(1, CPUSIZE.DWORD_BIT)
+                        )
+                    )
+
+                # Assign symbolic result to return register
+                sym_exp = ctx.newSymbolicExpression(ast_sum)
+                ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
+                import IPython; IPython.embed()
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+        return
+
+    
 class strtoul(FunctionHook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
@@ -69,6 +287,7 @@ class strtoul(FunctionHook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # TODO: Make other classes similar to this one!
+                # TODO: Can we consider strtoul as a special case of strtol?
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self._nptr = Helper.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
