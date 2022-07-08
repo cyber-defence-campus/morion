@@ -14,4 +14,5 @@ continue
 # Break before and after strcpy
 tbreak *0x40048c
 tbreak *0x400490
+tbreak *0x400494
 continue

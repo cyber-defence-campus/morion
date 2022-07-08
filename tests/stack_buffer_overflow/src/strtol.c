@@ -6,7 +6,7 @@
 
 /*
  * Trigger Segmentation Fault
- * ./strcpy `python3 -c 'print("A"*132)'`
+ * ./strcpy `python3 -c "import sys; sys.stdout.buffer.write(b'A'*132+b'B'*4)"`
  */
 
 void vuln_func(char *s) {
