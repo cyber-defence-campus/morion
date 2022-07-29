@@ -256,7 +256,7 @@ class GdbTracer:
                     logger.debug(f"---       '{entry_hook_fun.__self__.synopsis:s}'")
                     for addr, opcode, disassembly, comment in entry_hook_fun():
                         self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
-
+                
                 # Run concrete execution till return address
                 gdb.execute(f"tbreak *{hook_return_addr:d}")
                 gdb.execute(f"continue")
@@ -445,4 +445,4 @@ if __name__ == "__main__":
     gdb.execute(f"set disassembly-flavor intel")
     
     # Register commands in GDB
-    GdbTraceCommand("trace")
+    GdbTraceCommand("morion_trace")
