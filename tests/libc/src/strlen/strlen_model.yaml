@@ -1,0 +1,86 @@
+code:
+  '0x00001000': [4f f0 07 00, 'mov  r0, #0x7', 'Hook: libc_model:strlen (on_leave)']
+  '0x00001004': [c0 f2 00 00, 'movt r0, #0x0', 'Hook: libc_model:strlen (on_leave)']
+  '0x00001008': [70 47, bx lr, 'Hook: libc_model:strlen (on_leave)']
+  '0x00400554': [00 30 a0 e1, 'mov r3, r0', 'L10: `s = (char *) calloc(BUF_LENGTH,
+      sizeof(char));`']
+  '0x00400558': [08 30 0b e5, 'str r3, [fp, #-8]', 'L10: `s = (char *) calloc(BUF_LENGTH,
+      sizeof(char));`']
+  '0x0040055c': [08 00 1b e5, 'ldr r0, [fp, #-8]', 'L13: `if(strlen(s) == 2) {`']
+  '0x00400560': [a6 02 f0 fa, 'blx #-0x3ff55f', 'Hook: libc_model:strlen (on_entry)']
+  '0x00400564': [00 30 a0 e1, 'mov r3, r0', 'L13: `if(strlen(s) == 2) {`']
+  '0x00400568': [02 00 53 e3, 'cmp r3, #2', 'L13: `if(strlen(s) == 2) {`']
+  '0x0040056c': [01 00 00 1a, 'bne #0x400578', 'L13: `if(strlen(s) == 2) {`']
+  '0x00400578': [00 30 a0 e3, 'mov r3, #0', 'L16: `return 0;`']
+  '0x0040057c': [03 00 a0 e1, 'mov r0, r3', 'L17: `}`']
+  '0x00400580': [04 d0 4b e2, 'sub sp, fp, #4', 'L17: `}`']
+  '0x00400584': [00 88 bd e8, 'pop {fp, pc}', 'L17: `}`']
+hooks:
+  libc_model:
+    strlen:
+    - {entry: '0x400560', leave: '0x400564', target: '0x1000'}
+info: {arch: armv7, thumb: false}
+states:
+  entry:
+    addr: '0x00400554'
+    mems:
+      '0x00412190': ['0x41']
+      '0x00412191': ['0x42', $]
+      '0x00412192': ['0x43', $]
+      '0x00412193': ['0x44']
+      '0x00412194': ['0x45', $]
+      '0x00412195': ['0x46']
+      '0x00412196': ['0x47']
+      '0x00412197': ['0x00']
+      '0xbefff47c': ['0x00']
+      '0xbefff47d': ['0x00']
+      '0xbefff47e': ['0x00']
+      '0xbefff47f': ['0x00']
+      '0xbefff480': ['0x00']
+      '0xbefff481': ['0x00']
+      '0xbefff482': ['0x00']
+      '0xbefff483': ['0x00']
+      '0xbefff484': ['0x21']
+      '0xbefff485': ['0x0a']
+      '0xbefff486': ['0xef']
+      '0xbefff487': ['0xb6']
+    regs:
+      r0: ['0x00412190']
+      r11: ['0xbefff484']
+      r3: ['0x00412198']
+      sp: ['0xbefff478']
+      z: ['0x00000000']
+  leave:
+    addr: '0xb6ef0a20'
+    mems:
+      '0x00412190': ['0x41']
+      '0x00412191': ['0x42', $]
+      '0x00412192': ['0x43', $]
+      '0x00412193': ['0x44']
+      '0x00412194': ['0x45', $]
+      '0x00412195': ['0x46']
+      '0x00412196': ['0x47']
+      '0x00412197': ['0x00']
+      '0xbefff47c': ['0x90']
+      '0xbefff47d': ['0x21']
+      '0xbefff47e': ['0x41']
+      '0xbefff47f': ['0x00']
+      '0xbefff480': ['0x00']
+      '0xbefff481': ['0x00']
+      '0xbefff482': ['0x00']
+      '0xbefff483': ['0x00']
+      '0xbefff484': ['0x21']
+      '0xbefff485': ['0x0a']
+      '0xbefff486': ['0xef']
+      '0xbefff487': ['0xb6']
+    regs:
+      c: ['0x00000001']
+      n: ['0x00000000']
+      pc: ['0xb6ef0a20']
+      r0: ['0x00000000']
+      r11: ['0x00000000']
+      r14: ['0x00400564']
+      r3: ['0x00000000']
+      sp: ['0xbefff488']
+      v: ['0x00000000']
+      z: ['0x00000000']

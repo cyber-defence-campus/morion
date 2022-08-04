@@ -11,36 +11,27 @@ class FunctionHook:
     Base class for simulations functions.
     """
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, logger: Logger = Logger()) -> None:
         self._name = name
         self._entry_addr = entry_addr
         self._leave_addr = leave_addr
+        self._target_addr = target_addr
         self._logger = logger
         self.synopsis = ""
         return
 
-    def _arm_assemble(self, code_lines: List[str], is_entry: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
+    def _arm_assemble(self, code_addr: int, code_lines: List[str], is_thumb: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
         inst_trace = []
-        # Configure architecture and mode
-        arch  = KS_ARCH_ARM
-        mode  = KS_MODE_THUMB if GdbHelper.get_thumb_state() else KS_MODE_ARM
-        mode += KS_MODE_BIG_ENDIAN if GdbHelper.get_byteorder() == "big" else KS_MODE_LITTLE_ENDIAN
         # Initialize Keystone assembler
+        arch  = KS_ARCH_ARM
+        mode  = KS_MODE_THUMB if is_thumb else KS_MODE_ARM
+        mode += KS_MODE_BIG_ENDIAN if GdbHelper.get_byteorder() == "big" else KS_MODE_LITTLE_ENDIAN
         ks = Ks(arch, mode)
         # Assemble code
-        pc = GdbHelper.get_register_value("pc")
-        if is_entry:
-            self._hook_addr = 0x1000
-            code_line = f"mov pc, 0x{self._hook_addr:x}"
-            encoding, _ = ks.asm(code_line, as_bytes=True)
-            inst_trace.append((pc, encoding, code_line, comment))
-        else:
-            code_lines.extend(self._arm_mov_to_reg("r2", pc))
-            code_lines.extend([f"mov pc, r2"])
         for code_line in code_lines:
             encoding, _ = ks.asm(code_line, as_bytes=True)
-            inst_trace.append((self._hook_addr, encoding, code_line, comment))
-            self._hook_addr += len(encoding)
+            inst_trace.append((code_addr, encoding, code_line, comment))
+            code_addr += len(encoding)
         return inst_trace
 
     def _arm_mov_to_reg(self, reg_name: str, value: int) -> List[str]:
@@ -66,9 +57,14 @@ class FunctionHook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                # Inject assembly
-                code = []
-                return self._arm_assemble(code, is_entry=True, comment=f"{self._name:s} (on_entry)")
+                # Inject branch to Thumb state stub code
+                pc = GdbHelper.get_register_value("pc")
+                pc_rel_target = f"#{hex(self._target_addr - pc + 1):s}"
+                code = [
+                    f"blx {pc_rel_target:s}"
+                ]
+                is_thumb = GdbHelper.get_thumb_state()
+                return self._arm_assemble(pc, code, is_thumb, f"{self._name:s} (on_entry)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             symbex.logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
@@ -89,9 +85,11 @@ class FunctionHook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                # Inject assembly
-                code = []
-                return self._arm_assemble(code, is_entry=False, comment=f"{self._name:s} (on_leave)")
+                # Inject Thumb state stub code
+                code = [
+                    "bx lr"
+                ]
+                return self._arm_assemble(self._target_addr, code, True, f"{self._name:s} (on_leave)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as exc:
             symbex.logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")

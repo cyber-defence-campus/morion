@@ -1,7 +1,7 @@
 hooks:
-  libc:
+  libc_model:
     strlen:
-    - {entry: '0x400560', leave: '0x400564'}
+    - {entry: '0x400560', leave: '0x400564', target: '0x1000'}
 states:
   entry:
     mems:

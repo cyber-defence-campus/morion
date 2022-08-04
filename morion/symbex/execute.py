@@ -209,8 +209,11 @@ class Executor:
             is_supported = self.ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
 
             # Log instruction
-            line = [f"0x{inst.getAddress():08x} {inst.getDisassembly():s}", comment]
-            self._logger.debug("".join(item.ljust(36) for item in line), color="cyan")
+            inst_addr = f"0x{addr:08x}"
+            inst_opcode = opcode.hex()
+            inst_opcode = " ".join(a+b for a, b in zip(inst_opcode[::2], inst_opcode[1::2]))
+            inst_line = [f"{inst_addr:s} ({inst_opcode:s}): {disassembly:s}", f"# {comment:s}"]
+            self._logger.debug("".join(item.ljust(50) for item in inst_line), color="cyan")
 
             # Post-process instruction
             for post_processing_function in self._post_processing_functions:
@@ -219,36 +222,26 @@ class Executor:
             self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x} {disassembly:s}': {str(e):s}")
             return False
         return is_supported
-
+        
     def run(self, args: argparse.Namespace) -> None:
-        # Symbolic execution
-        self._logger.info(f"Start symbolic execution...")
+        # Initialization
         self.stepping = args.stepping
         VulnerabilityAnalysis.disallow_user_inputs = args.disallow_user_inputs
         VulnerabilityAnalysis.analysis_history = {}
         inside_hook = False
-        pc = self._recorder.get_trace_start_address()
-        for addr, opcode, disassembly, comment in self._recorder.get_trace():
-            # Decode instruction
-            try:
-                if not isinstance(addr, int):
-                    addr = int(addr, base=0)
-                opcode = bytes.fromhex(opcode.replace(" ", ""))
-            except Exception as e:
-                self._logger.critical(f"Failed to read instruction from trace file: {str(e):s}")
-                return
 
-            # Validate program counter
-            if addr != pc:
-                self._logger.critical("Symbolic execution is desynchronized!")
-                self._logger.critical(f"\tNext PC concrete: 0x{addr:08x}")
-                self._logger.critical(f"\tNext PC symbolic: 0x{pc:08x}")
-                break
+        # Symbolic execution
+        self._logger.info(f"Start symbolic execution...")
+        pc = self._recorder.get_entry_address()
+        stop_addr = self._recorder.get_leave_address()
+        while pc != stop_addr:
+            opcode, disassembly, comment = self._recorder.get_instruction(pc)
+            if opcode is None: break
 
             # Execute hook functions
-            hook_funs, hook_return_addr = self._addr_mapper.get_hooks(addr)
+            hook_funs, hook_return_addr = self._addr_mapper.get_hooks(pc)
             for hook_fun in hook_funs:
-                hook_symbols = self._addr_mapper.get_symbols(addr)
+                hook_symbols = self._addr_mapper.get_symbols(pc)
                 hook_symbols = ", ".join(s for s in hook_symbols if s)
                 if hook_return_addr is not None:
                     self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
@@ -260,12 +253,11 @@ class Executor:
                     inside_hook = False
 
             # Symbolic execution
-            if not self._step(addr, opcode, disassembly, comment):
-                break
+            if not self._step(pc, opcode, disassembly, comment): break
             if self.stepping:
                 IPython.embed(header="Stepping... (disable by 'self.stepping = False')")
 
-            # Update program counter
+            # Upgrade program counter
             pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)
             
         self._logger.info(f"... finished symbolic execution.")

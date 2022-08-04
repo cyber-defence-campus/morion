@@ -90,7 +90,7 @@ class GdbHelper:
         try:
             source = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True).splitlines()[1]
             match = re.match(r"^([0-9]+)\t\s*(.*)$", source)
-            source = f"{match.group(2):s} // Line: {match.group(1)}"
+            source = f"L{match.group(1)}: `{match.group(2):s}`"
         except Exception as e:
             source = ""
         return pc, opcode, source
@@ -255,7 +255,7 @@ class GdbTracer:
                     logger.debug(f"--- Hook: '{symbols:s}'")
                     logger.debug(f"---       '{entry_hook_fun.__self__.synopsis:s}'")
                     for addr, opcode, disassembly, comment in entry_hook_fun():
-                        self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
+                        self._recorder.add_instruction(addr, opcode, disassembly, f"Hook: {comment:s}")
                 
                 # Run concrete execution till return address
                 gdb.execute(f"tbreak *{hook_return_addr:d}")
@@ -266,7 +266,7 @@ class GdbTracer:
                     symbols = self._addr_mapper.get_symbols(hook_return_addr)
                     symbols = ", ".join(s for s in symbols if s)
                     for addr, opcode, disassembly, comment in leave_hook_fun():
-                        self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
+                        self._recorder.add_instruction(addr, opcode, disassembly, f"Hook: {comment:s}")
                     logger.debug(f"--- Hook: '{symbols:s}'")
 
                 # Go to beginning of while loop
@@ -352,8 +352,8 @@ class GdbTracer:
         logger.info(f"Start loading trace file '{trace_file:s}'...")
         if not self._recorder.load(trace_file):
             return False
-        # Set empty trace
-        self._recorder._trace["trace"] = []
+        # Empty code
+        self._recorder._trace["code"] = {}
         # Set register values
         logger.debug("Regs:")
         for reg_name, reg_values in self._recorder._trace["states"]["entry"]["regs"].items():
@@ -398,6 +398,7 @@ class GdbTracer:
                     try:
                         entry = int(addr["entry"], base=16)
                         leave = int(addr["leave"], base=16)
+                        target = int(addr["target"], base=16)
                     except:
                         logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
@@ -410,7 +411,7 @@ class GdbTracer:
                             if c_name != fun: continue
 
                             # Instantiate class
-                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, logger)
+                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, target, logger)
 
                             # Register hook at entry address
                             self._addr_mapper.add(addr=entry,
