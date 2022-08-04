@@ -12,7 +12,8 @@ class BranchAnalyzer(Executor):
     def run(self, args: argparse.Namespace) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
-        self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, False)
+        # TODO: Changed from False to True. Is this still correct?
+        self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
         # Set post-processing functions
         self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_branches)
         # Run symbolic execution
