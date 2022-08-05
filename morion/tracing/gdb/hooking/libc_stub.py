@@ -43,7 +43,7 @@ class strlen(FunctionHook):
                     "ldr   r4, [r7, #4]",
                     "b.n    #0x4",
                     "adds  r4, #1",
-                    "ldrb  r3, [r4]",
+                    "ldrb  r3, [r4, #0]",
                     "cmp   r3, #0",
                     "bne.n #-0x6",
                     "ldr   r3, [r7, #4]",

@@ -6,7 +6,7 @@ code:
   '0x00001008': [7c 68, 'ldr   r4, [r7, #4]', 'Hook: libc_stub:strlen (on_leave)']
   '0x0000100a': [00 e0, 'b.n    #0x4', 'Hook: libc_stub:strlen (on_leave)']
   '0x0000100c': [01 34, 'adds  r4, #1', 'Hook: libc_stub:strlen (on_leave)']
-  '0x0000100e': [23 78, 'ldrb  r3, [r4]', 'Hook: libc_stub:strlen (on_leave)']
+  '0x0000100e': [23 78, 'ldrb  r3, [r4, #0]', 'Hook: libc_stub:strlen (on_leave)']
   '0x00001010': [00 2b, 'cmp   r3, #0', 'Hook: libc_stub:strlen (on_leave)']
   '0x00001012': [fb d1, 'bne.n #-0x6', 'Hook: libc_stub:strlen (on_leave)']
   '0x00001014': [7b 68, 'ldr   r3, [r7, #4]', 'Hook: libc_stub:strlen (on_leave)']
