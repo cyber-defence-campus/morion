@@ -6,7 +6,7 @@
 int main() {
     char *s;
 
-    // Buffer (will be symbolized)
+    // Buffer (will be symbolised)
     s = (char *) calloc(BUF_LENGTH, sizeof(char));
 
     // Testing strlen
