@@ -20,7 +20,8 @@ class strlen(FunctionHook):
                 # Log arguments
                 s = GdbHelper.get_register_value("r0")
                 s_val = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\ts=0x{s:x} ('{s_val:s}')")
+                self._logger.debug(f"\ts   = 0x{s:08x}")
+                self._logger.debug(f"\t*s  = '{s_val:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -33,7 +34,7 @@ class strlen(FunctionHook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 length = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tret={length:d}")
+                self._logger.debug(f"\tret = {length:d}")
                 # Inject Thumb state stub code
                 code = [
                     "push  {r4, r7}",

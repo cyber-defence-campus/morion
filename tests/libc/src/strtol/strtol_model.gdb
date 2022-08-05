@@ -10,4 +10,4 @@ tbreak *0x400680
 continue
 
 # Trace binary
-trace debug tests/libc/src/strtol/strtol.yaml 0x4006e4
+morion_trace debug tests/libc/src/strtol/strtol_model.yaml 0x4006e4
