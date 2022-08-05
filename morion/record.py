@@ -3,7 +3,6 @@
 import yaml
 from   morion.log import Logger
 from   typing     import List, Tuple
-    
 
 class Recorder:
     """
@@ -91,7 +90,11 @@ class Recorder:
     def store(self, trace_file: str) -> bool:
         try:
             with open(trace_file, "w+") as f:
-                yaml.dump(self._trace, f, default_flow_style=None, width=float("inf"))
+                yaml.safe_dump(self._trace, f,
+                               default_style=None,
+                               default_flow_style=None,
+                               encoding='utf-8',
+                               width=float("inf"))
         except:
             return False
         return True
