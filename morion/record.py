@@ -91,7 +91,7 @@ class Recorder:
     def store(self, trace_file: str) -> bool:
         try:
             with open(trace_file, "w+") as f:
-                yaml.dump(self._trace, f, default_flow_style=None)
+                yaml.dump(self._trace, f, default_flow_style=None, width=float("inf"))
         except:
             return False
         return True

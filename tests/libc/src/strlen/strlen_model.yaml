@@ -2,10 +2,8 @@ code:
   '0x00001000': [4f f0 07 00, 'mov  r0, #0x7', 'Hook: libc_model:strlen (on_leave)']
   '0x00001004': [c0 f2 00 00, 'movt r0, #0x0', 'Hook: libc_model:strlen (on_leave)']
   '0x00001008': [70 47, bx lr, 'Hook: libc_model:strlen (on_leave)']
-  '0x00400554': [00 30 a0 e1, 'mov r3, r0', 'L10: `s = (char *) calloc(BUF_LENGTH,
-      sizeof(char));`']
-  '0x00400558': [08 30 0b e5, 'str r3, [fp, #-8]', 'L10: `s = (char *) calloc(BUF_LENGTH,
-      sizeof(char));`']
+  '0x00400554': [00 30 a0 e1, 'mov r3, r0', 'L10: `s = (char *) calloc(BUF_LENGTH, sizeof(char));`']
+  '0x00400558': [08 30 0b e5, 'str r3, [fp, #-8]', 'L10: `s = (char *) calloc(BUF_LENGTH, sizeof(char));`']
   '0x0040055c': [08 00 1b e5, 'ldr r0, [fp, #-8]', 'L13: `if(strlen(s) == 2) {`']
   '0x00400560': [a6 02 f0 fa, 'blx #-0x3ff55f', 'Hook: libc_model:strlen (on_entry)']
   '0x00400564': [00 30 a0 e1, 'mov r3, r0', 'L13: `if(strlen(s) == 2) {`']
