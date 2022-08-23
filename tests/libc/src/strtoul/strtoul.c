@@ -1,25 +1,50 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#define BUF_LENGTH 8
+#define MAX_BUF_LEN 16
 
-int main() {
-    char *nptr;
-    char *endptr;
-    const int base = 10;
-    unsigned long ret;
+/* 
+ * unsigned long strtoul(
+ *      const char *restrict nptr,
+ *      char **restrict endptr,
+ *      int base
+ * );
+ */
 
-    // Buffer (will be symbolized)
-    nptr = (char *) calloc(BUF_LENGTH, sizeof(char));
+int main(int argc, char *argv[]) {
+
+    char *nptr, *endptr;
+    int  base;
+    unsigned long result;
+
+    // Usage
+    if(argc != 3) {
+        printf("Usage: %s <string> <base>\n", argv[0]);
+        return EXIT_FAILURE;
+    }
+
+    // Parse arguments (ensure fix string address)
+    nptr = (char *) malloc(MAX_BUF_LEN * sizeof(char));
+    strncpy(nptr, argv[1], MAX_BUF_LEN-1);
+    nptr[MAX_BUF_LEN-1] = '\0';
+    base = atoi(argv[2]);
 
     // Testing strtoul
-    ret = strtoul(nptr, &endptr, base);
+    result = strtoul(nptr, &endptr, base);
+    if(result < 10){
+        printf("%lu <  10\n", result);
+    } else {
+        printf("%lu >= 10\n", result);
+    }
+
+    // Debug output
     printf("nptr    = %p: '%s'\n", nptr, nptr);
     printf("*endptr = %p: '%s'\n", endptr, endptr);
-    printf("ret     = %lu\n", ret);
-    if(ret == 22) {
-        return -1;
-    }
-    return 0;
+    printf("base    = %p: '%d'\n", &base, base);
+    printf("result  = %p: '%lu'\n", &result, result);
+
+    // Cleanup
+    free(nptr);
+    return EXIT_SUCCESS;
 }

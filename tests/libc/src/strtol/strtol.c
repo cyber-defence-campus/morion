@@ -4,7 +4,13 @@
 
 #define MAX_BUF_LEN 16
 
-// long strtol(const char *restrict nptr, char **restrict endptr, int base);
+/*
+ * long strtol(
+ *     const char *restrict nptr,
+ *     char **restrict endptr,
+ *     int base
+ * );
+ */
 
 int main(int argc, char *argv[]) {
 

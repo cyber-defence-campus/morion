@@ -280,101 +280,17 @@ class strtol(FunctionHook):
             self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
         return
 
-    
-##class strtoul(FunctionHook):
-##
-##    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-##        super().__init__(name, entry_addr, leave_addr, logger)
-##        self.synopsis = "unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base);"
-##        return
-##
-##    def on_entry(self, ctx: TritonContext) -> None:
-##        try:
-##            arch = ctx.getArchitecture()
-##            if arch == ARCH.ARM32:
-##                # TODO: Make other classes similar to this one!
-##                # TODO: Can we consider strtoul as a special case of strtol?
-##                self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
-##                self._nptr = Helper.get_memory_string(ctx, self.nptr)
-##                self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
-##                self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
-##                self._logger.debug(f"\tnptr     = 0x{self.nptr:08x}")
-##                self._logger.debug(f"\t*nptr    = '{self._nptr:s}' [{len(self._nptr):d}]")
-##                self._logger.debug(f"\tendptr   = 0x{self.endptr:08x}")
-##                self._logger.debug(f"\tbase     = {self.base:d}")
-##                return
-##            raise Exception(f"Architecture '{arch:d}' not supported.")
-##        except Exception as e:
-##            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
-##        return
-##
-##    def on_leave(self, ctx: TritonContext) -> None:
-##        try:
-##            arch = ctx.getArchitecture()
-##            if arch == ARCH.ARM32:
-##                # Concrete result
-##                _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
-##                __endptr = Helper.get_memory_string(ctx, _endptr)
-##                ret = ctx.getConcreteRegisterValue(ctx.registers.r0)
-##
-##                # Parse string (match spaces, sign, prefix and value)
-##                match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self._nptr)
-##                spaces, sign, prefix, value = match.groups()
-##
-##                # Determine base ([2, 36] or 0)
-##                base = self.base
-##                if not (base >= 2 and base <= 36 or base == 0):
-##                    self._logger.warning(f"strtoul: Base {base:d} is invalid.")
-##                    return
-##                if base == 0:
-##                    if prefix:
-##                        base = 16
-##                    elif value.startswith("0"):
-##                        base = 8
-##                    else:
-##                        base = 10
-##                
-##                self._logger.debug(f"\t*endptr  = 0x{_endptr:08x}")
-##                self._logger.debug(f"\t**endptr = '{__endptr:s}' [{len(__endptr):d}]")
-##                self._logger.debug(f"\tbase     = {base:d}")
-##                self._logger.debug(f"\tret      = {ret:d}")
-##
-##                # Symbolic result
-##                ast = ctx.getAstContext()
-##                ast_0 = ast.bv(ord("0"), CPUSIZE.BYTE_BIT)
-##                ast_9 = ast.bv(ord("9"), CPUSIZE.BYTE_BIT)
-##                ast_a = ast.bv(ord("a"), CPUSIZE.BYTE_BIT)
-##                ast_A = ast.bv(ord("A"), CPUSIZE.BYTE_BIT)
-##                ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
-##                # Iterate valid characters
-##                for i in range(0, len(self._nptr)):
-##                    ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + i, CPUSIZE.BYTE))
-##                    ast_ak = ast.ite(
-##                        ast.land([ast_ck >= ast_0, ast_ck <= ast_9, ast_ck < ast_0 + base]),    # If c is a valid digit for the given base
-##                        ast_ck - ast_0,
-##                        ast.ite(
-##                            ast.land([ast_ck >= ast_a, ast_ck < ast_a + base - 10]),            # If c is a valid lower-case letter for the given base
-##                            ast_ck - ast_a + 10,
-##                            ast.ite(
-##                                ast.land([ast_ck >= ast_A, ast_ck < ast_A + base - 10]),        # If c is a valid upper-case letter for the given base
-##                                ast_ck - ast_A + 10,
-##                                ast.ite(                                                        # Constrain valid symbols
-##                                    ast_ck < ast_0,
-##                                    ast_0,
-##                                    ast_0 + base -1
-##                                )
-##                            )
-##                        )
-##                    )
-##                    ast_ak = ast.concat([ast.bv(0, CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT), ast_ak])
-##                    ast_sum = ast.bvadd(ast_sum, ast_ak * (base ** (len(self._nptr)-1-i)))
-##                sym_exp = ctx.newSymbolicExpression(ast_sum)
-##                ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.registers.r0)
-##                return
-##            raise Exception(f"Architecture '{arch:d}' not supported.")
-##        except Exception as e:
-##            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
-##        return
+
+class strtoul(strtol):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, logger)
+        self.synopsis = "unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base);"
+        return
+
+    def on_leave(self, ctx: TritonContext) -> None:
+        # TODO: Test and optimize
+        return super().on_leave()
 
     
 class strlen(FunctionHook):
