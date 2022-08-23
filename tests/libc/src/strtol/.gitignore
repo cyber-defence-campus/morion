@@ -1,0 +1,2 @@
+*.yaml
+!*.init.yaml
