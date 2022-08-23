@@ -113,7 +113,7 @@ class Executor:
                 if "$" in mem_values:
                     mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
                     self.ctx.symbolizeMemory(mem, f"0x{mem_addr:x}")
-                    self._logger.debug(f"\t0x{mem_addr:x}=$")
+                    self._logger.debug(f"\t0x{mem_addr:08x}=$")
             except:
                 continue
         # Set hooks
@@ -148,14 +148,14 @@ class Executor:
                                                 symbol=f"{m_name:s}:{c_name:s} (entry)",
                                                 function=ci.on_entry,
                                                 return_addr=leave)
-                            self._logger.debug(f"\t0x{entry:x} '{m_name:s}:{c_name:s} (entry)'")
+                            self._logger.debug(f"\t0x{entry:08x}: '{m_name:s}:{c_name:s} (entry)'")
 
                             # Register hook at leave address
                             self._addr_mapper.add(addr=leave,
                                                 symbol=f"{m_name:s}:{c_name:s} (leave)",
                                                 function=ci.on_leave,
                                                 return_addr=None)
-                            self._logger.debug(f"\t0x{leave:x} '{m_name:s}:{c_name:s} (leave)'")
+                            self._logger.debug(f"\t0x{leave:08x}: '{m_name:s}:{c_name:s} (leave)'")
         self._logger.info(f"... finished loading file '{trace_file:s}'.")
         return
 
@@ -306,7 +306,7 @@ class Executor:
             mem_mask = "".join("$" if b else "X" for b in byte_mask)
             # Log symbolic memory
             if "$" in mem_mask:
-                self._logger.info(f"\t0x{mem_addr:x}={mem_mask:s}", color="magenta")
+                self._logger.info(f"\t0x{mem_addr:08x}={mem_mask:s}", color="magenta")
             # Record memory values
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
             if "$" in mem_mask:
