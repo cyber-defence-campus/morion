@@ -292,7 +292,7 @@ class strtoul(strtol):
 
     def on_leave(self, ctx: TritonContext) -> None:
         # TODO: Test and optimize
-        return super().on_leave()
+        return super().on_leave(ctx)
 
     
 class strlen(base_hook):
