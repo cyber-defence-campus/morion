@@ -28,4 +28,4 @@ tbreak *0x400684
 continue
 
 # Trace binary
-trace debug tests/hijack_indirect_callsite/src/icall.yaml 0xb6eaba20
+morion_trace debug tests/hijack_indirect_callsite/src/icall.yaml 0xb6eaba20
