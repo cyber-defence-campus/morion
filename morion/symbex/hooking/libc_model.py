@@ -2,13 +2,13 @@
 ## -*- coding: utf-8 -*-
 from   morion.log                import Logger
 from   morion.symbex.execute     import Helper
-from   morion.symbex.hooking.lib import FunctionHook
+from   morion.symbex.hooking.lib import base_hook
 from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
 import string
 
 
-class memcpy(FunctionHook):
+class memcpy(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, logger)
@@ -51,7 +51,7 @@ class memcpy(FunctionHook):
         return
 
 
-class printf(FunctionHook):
+class printf(base_hook):
     
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, logger)
@@ -59,7 +59,7 @@ class printf(FunctionHook):
         return
 
 
-class strtol(FunctionHook):
+class strtol(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, logger)
@@ -295,7 +295,7 @@ class strtoul(strtol):
         return super().on_leave()
 
     
-class strlen(FunctionHook):
+class strlen(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, logger)

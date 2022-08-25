@@ -6,7 +6,7 @@ from morion.tracing.gdb.trace import GdbHelper
 from typing                   import List, Tuple
 
 
-class FunctionHook:
+class base_hook:
     """
     Base class for simulations functions.
     """
@@ -17,7 +17,7 @@ class FunctionHook:
         self._leave_addr = leave_addr
         self._target_addr = target_addr
         self._logger = logger
-        self.synopsis = ""
+        self.synopsis = "base_hook"
         return
 
     def _arm_assemble(self, code_addr: int, code_lines: List[str], is_thumb: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
@@ -95,6 +95,13 @@ class FunctionHook:
             symbex.logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
         return []
 
-    
 
-    
+class generic_hook(base_hook):
+    """
+    Base class for simulations functions.
+    """
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, logger)
+        self.synopsis = "generic_hook"
+        return

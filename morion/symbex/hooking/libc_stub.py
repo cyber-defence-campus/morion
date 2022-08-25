@@ -2,13 +2,13 @@
 ## -*- coding: utf-8 -*-
 from   morion.log                import Logger
 from   morion.symbex.execute     import Helper
-from   morion.symbex.hooking.lib import FunctionHook
+from   morion.symbex.hooking.lib import base_hook
 from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
 import string
 
 
-class strlen(FunctionHook):
+class strlen(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, logger)
