@@ -43,6 +43,7 @@ class Executor:
         self._logger = logger
         self._recorder = Recorder(logger)
         self._addr_mapper = AddressMapper()
+        self._pre_processing_functions = []
         self._post_processing_functions = []
         return
 
@@ -205,6 +206,10 @@ class Executor:
             # Disassemble instruction
             self.ctx.disassembly(inst)
 
+            # Pre-process instruction
+            for pre_processing_function in self._pre_processing_functions:
+                pre_processing_function(self.ctx, inst, self._logger, "PRE")
+
             # Build instruction semantics
             is_supported = self.ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
 
@@ -217,7 +222,7 @@ class Executor:
 
             # Post-process instruction
             for post_processing_function in self._post_processing_functions:
-                post_processing_function(self.ctx, inst, self._logger)
+                post_processing_function(self.ctx, inst, self._logger, "POST")
         except Exception as e:
             self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x} {disassembly:s}': {str(e):s}")
             return False
