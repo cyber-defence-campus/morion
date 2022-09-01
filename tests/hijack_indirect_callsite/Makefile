@@ -1,18 +1,18 @@
 CC      = gcc
 CFLAGS  = -Wall -marm -O3
 
-icall_SRC = src/icall.c
-icall_TGT = bin/icall
+sudo_SRC = src/sudo.c
+sudo_TGT = bin/sudo
 
 .PHONY: all
-all: icall
+all: sudo
 
-icall: $(icall_SRC)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(icall_TGT) $(icall_SRC) -lcrypt
-	strip --strip-unneeded $(icall_TGT)
-	sudo chown root $(icall_TGT)
-	sudo chmod u+s $(icall_TGT)
+sudo: $(sudo_SRC)
+	$(CC) $(CFLAGS) -o $(sudo_TGT) $(sudo_SRC)
+	strip --strip-unneeded $(sudo_TGT)
+	sudo chown root $(sudo_TGT)
+	sudo chmod u+s $(sudo_TGT)
 
 .PHONY: clean
 clean:
-	rm -f $(icall_TGT)
+	rm -f $(sudo_TGT)

