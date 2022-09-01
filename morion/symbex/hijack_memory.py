@@ -13,13 +13,15 @@ class MemoryHijacker(Executor):
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
+        # Set pre-processing functions
+        self._pre_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_reads)
         # Set post-processing functions
-        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_reads)
         self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_writes)
         # Run symbolic execution
         super().run(args)
+        # Remove pre-processing functions
+        self._pre_processing_functions.pop()
         # Remove post-processing functions
-        self._post_processing_functions.pop()
         self._post_processing_functions.pop()
         # Restore symbolic execution mode
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, self._only_on_symbolized)
