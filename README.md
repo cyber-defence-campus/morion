@@ -4,7 +4,9 @@
 #### Dependencies
 ```shell
 # libcapstone
-git clone https://github.com/capstone-engine/capstone && cd capstone/
+curl -L https://github.com/capstone-engine/capstone/archive/refs/tags/4.0.2.tar.gz -o capstone.tar.gz
+tar -xvzf capstone.tar.gz && rm capstone.tar.gz
+mv capstone-4.0.2 Capstone && cd Capstone/
 ./make.sh
 sudo ./make.sh install
 
