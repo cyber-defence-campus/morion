@@ -59,8 +59,8 @@ source venvs/morion/bin/activate
 Tracing with GDB (or GDB-Multiarch):
 ```shell
 gdb -q -x morion/tracing/gdb/trace.py
-(gdb) trace         # Show usage
-(gdb) help target   # Attach to target binary
+(gdb) morion_trace                    # Show usage
+(gdb) help target                     # Attach to target binary
 ```
 ### Symbolic Execution
 Symbolic execution of a binary's program trace:
