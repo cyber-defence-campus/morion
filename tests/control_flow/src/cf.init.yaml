@@ -1,0 +1,21 @@
+hooks:
+  lib:
+    generic_hook:
+    - {entry: '0x400540', leave: '0x400544', target: '0x1000'}
+    - {entry: '0x40055c', leave: '0x400560', target: '0x1000'}
+    - {entry: '0x400590', leave: '0x400594', target: '0x1000'}
+    - {entry: '0x4005a4', leave: '0x4005a8', target: '0x1000'}
+    - {entry: '0x4005ac', leave: '0x4005b0', target: '0x1000'}
+    - {entry: '0x4005dc', leave: '0x4005e0', target: '0x1000'}
+    - {entry: '0x4005ec', leave: '0x4005f0', target: '0x1000'}
+    - {entry: '0x4005f8', leave: '0x4005fc', target: '0x1000'}
+    - {entry: '0x40060c', leave: '0x400610', target: '0x1000'}
+    - {entry: '0x400620', leave: '0x400624', target: '0x1000'}
+    - {entry: '0x400634', leave: '0x400638', target: '0x1000'}
+    - {entry: '0x400648', leave: '0x40064c', target: '0x1000'}
+    - {entry: '0x400654', leave: '0x400658', target: '0x1000'}
+    - {entry: '0x400670', leave: '0x400674', target: '0x1000'}
+    - {entry: '0x40067c', leave: '0x400680', target: '0x1000'}
+  libc_model:
+    strlen:
+    - {entry: '0x400548', leave: '0x40054c', target: '0x2000'}
