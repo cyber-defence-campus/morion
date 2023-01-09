@@ -18,7 +18,7 @@ class Recorder:
             "hooks": {
             #    "lib": {
             #        "fun": [
-            #            {"entry": "0x0", "leave": "0x0", "target": "0x0"}
+            #            {"entry": "0x0", "leave": "0x0", "target": "0x0", "mode": ""}
             #        ]
             #    }
             },

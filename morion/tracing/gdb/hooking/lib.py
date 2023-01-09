@@ -11,11 +11,12 @@ class base_hook:
     Base class for simulations functions.
     """
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "", logger: Logger = Logger()) -> None:
         self._name = name
         self._entry_addr = entry_addr
         self._leave_addr = leave_addr
         self._target_addr = target_addr
+        self._mode = mode
         self._logger = logger
         self.synopsis = "base_hook"
         return
@@ -94,14 +95,3 @@ class base_hook:
         except Exception as exc:
             self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
         return []
-
-
-class generic_hook(base_hook):
-    """
-    Base class for simulations functions.
-    """
-
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, target_addr, logger)
-        self.synopsis = "generic_hook"
-        return

@@ -399,6 +399,7 @@ class GdbTracer:
                         entry = int(addr["entry"], base=16)
                         leave = int(addr["leave"], base=16)
                         target = int(addr["target"], base=16)
+                        mode = addr.get("mode", "")
                     except:
                         logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
@@ -411,7 +412,7 @@ class GdbTracer:
                             if c_name != fun: continue
 
                             # Instantiate class
-                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, target, logger)
+                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, target, mode, logger)
 
                             # Register hook at entry address
                             self._addr_mapper.add(addr=entry,

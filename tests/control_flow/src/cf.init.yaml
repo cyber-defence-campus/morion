@@ -1,6 +1,6 @@
 hooks:
   lib:
-    generic_hook:
+    base_hook:
     - {entry: '0x400540', leave: '0x400544', target: '0x1000'}
     - {entry: '0x40055c', leave: '0x400560', target: '0x1000'}
     - {entry: '0x400590', leave: '0x400594', target: '0x1000'}
@@ -16,6 +16,6 @@ hooks:
     - {entry: '0x400654', leave: '0x400658', target: '0x1000'}
     - {entry: '0x400670', leave: '0x400674', target: '0x1000'}
     - {entry: '0x40067c', leave: '0x400680', target: '0x1000'}
-  libc_model:
+  libc:
     strlen:
-    - {entry: '0x400548', leave: '0x40054c', target: '0x2000'}
+    - {entry: '0x400548', leave: '0x40054c', target: '0x2000', mode: 'model'}

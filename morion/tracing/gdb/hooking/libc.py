@@ -8,8 +8,8 @@ from typing                         import List, Tuple
 
 class strlen(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, target_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
         self.synopsis = "size_t strlen(const char *s);"
         return
 
