@@ -130,8 +130,9 @@ class Executor:
                     try:
                         entry = int(addr["entry"], base=16)
                         leave = int(addr["leave"], base=16)
+                        mode = addr.get("mode", "skip").lower()
                     except:
-                        logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
+                        self._logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
                     # Register corresponding hook functions
                     for _, m_name, _ in pkgutil.iter_modules([os.path.dirname(hooking.__file__)]):
@@ -142,21 +143,21 @@ class Executor:
                             if c_name != fun: continue
 
                             # Instantiate class
-                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, self._logger)
+                            ci = c(f"{m_name:s}:{c_name:s}", entry, leave, mode, self._logger)
 
                             # Register hook at entry address
                             self._addr_mapper.add(addr=entry,
-                                                symbol=f"{m_name:s}:{c_name:s} (entry)",
+                                                symbol=f"{m_name:s}:{c_name:s} (on=entry, mode={mode:s})",
                                                 function=ci.on_entry,
                                                 return_addr=leave)
-                            self._logger.debug(f"\t0x{entry:08x}: '{m_name:s}:{c_name:s} (entry)'")
+                            self._logger.debug(f"\t0x{entry:08x}: '{m_name:s}:{c_name:s} (on=entry, mode={mode:s})'")
 
                             # Register hook at leave address
                             self._addr_mapper.add(addr=leave,
-                                                symbol=f"{m_name:s}:{c_name:s} (leave)",
+                                                symbol=f"{m_name:s}:{c_name:s} (on=leave, mode={mode:s})",
                                                 function=ci.on_leave,
                                                 return_addr=None)
-                            self._logger.debug(f"\t0x{leave:08x}: '{m_name:s}:{c_name:s} (leave)'")
+                            self._logger.debug(f"\t0x{leave:08x}: '{m_name:s}:{c_name:s} (on=leave, mode={mode:s})'")
         self._logger.info(f"... finished loading file '{trace_file:s}'.")
         return
 
@@ -239,9 +240,20 @@ class Executor:
         self._logger.info(f"Start symbolic execution...")
         pc = self._recorder.get_entry_address()
         stop_addr = self._recorder.get_leave_address()
-        while pc != stop_addr:
-            opcode, disassembly, comment = self._recorder.get_instruction(pc)
-            if opcode is None: break
+        insts = self._recorder.get_instructions()
+        for addr, opcode, disassembly, comment in insts:
+            # Parse instruction address and opcode
+            try:
+                addr = int(addr, base=16)
+                opcode = bytes.fromhex(opcode.replace(" ", ""))
+            except:
+                self._logger.error(f"Failed to retrieve instruction.")
+                break
+
+            # Validate trace synchronization
+            if pc != addr:
+                self._logger.error(f"Desynchronized trace: pc=0x{pc:08x}, addr=0x{addr:08x}")
+                break
 
             # Execute hook functions
             hook_funs, hook_return_addr = self._addr_mapper.get_hooks(pc)
@@ -264,7 +276,10 @@ class Executor:
 
             # Upgrade program counter
             pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)
-            
+
+        # Validate stop address
+        if pc != stop_addr:
+            self._logger.error(f"Not terminated at the stop address: pc=0x{pc:08x}")
         self._logger.info(f"... finished symbolic execution.")
 
         # Symbolic state

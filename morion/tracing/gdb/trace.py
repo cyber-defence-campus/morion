@@ -352,8 +352,8 @@ class GdbTracer:
         logger.info(f"Start loading trace file '{trace_file:s}'...")
         if not self._recorder.load(trace_file):
             return False
-        # Empty code
-        self._recorder._trace["code"] = {}
+        # Empty instructions
+        self._recorder._trace["instructions"] = []
         # Set register values
         logger.debug("Regs:")
         for reg_name, reg_values in self._recorder._trace["states"]["entry"]["regs"].items():
@@ -399,7 +399,7 @@ class GdbTracer:
                         entry = int(addr["entry"], base=16)
                         leave = int(addr["leave"], base=16)
                         target = int(addr["target"], base=16)
-                        mode = addr.get("mode", "")
+                        mode = addr.get("mode", "skip").lower()
                     except:
                         logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
@@ -416,17 +416,17 @@ class GdbTracer:
 
                             # Register hook at entry address
                             self._addr_mapper.add(addr=entry,
-                                               symbol=f"{m_name:s}:{c_name:s} (entry)",
+                                               symbol=f"{m_name:s}:{c_name:s} (on=entry, mode={mode:s})",
                                                function=ci.on_entry,
                                                return_addr=leave)
-                            logger.debug(f"\t0x{entry:x} '{m_name:s}:{c_name:s} (entry)'")
+                            logger.debug(f"\t0x{entry:x} '{m_name:s}:{c_name:s} (on=entry, mode={mode:s})'")
 
                             # Register hook at leave address
                             self._addr_mapper.add(addr=leave,
-                                               symbol=f"{m_name:s}:{c_name:s} (leave)",
+                                               symbol=f"{m_name:s}:{c_name:s} (on=leave, mode={mode:s})",
                                                function=ci.on_leave,
                                                return_addr=None)
-                            logger.debug(f"\t0x{leave:x} '{m_name:s}:{c_name:s} (leave)'")
+                            logger.debug(f"\t0x{leave:x} '{m_name:s}:{c_name:s} (on=leave, mode={mode:s})'")
         logger.info(f"... finished loading trace file '{trace_file:s}'.")
         return True
 

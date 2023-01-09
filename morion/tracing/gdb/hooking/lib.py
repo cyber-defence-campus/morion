@@ -11,7 +11,7 @@ class base_hook:
     Base class for simulations functions.
     """
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         self._name = name
         self._entry_addr = entry_addr
         self._leave_addr = leave_addr
@@ -65,10 +65,10 @@ class base_hook:
                     f"blx {pc_rel_target:s}"
                 ]
                 is_thumb = GdbHelper.get_thumb_state()
-                return self._arm_assemble(pc, code, is_thumb, f"{self._name:s} (on_entry)")
+                return self._arm_assemble(pc, code, is_thumb, f"{self._name:s} (on=entry, mode={self._mode:s})")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return []
 
     def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
@@ -90,8 +90,8 @@ class base_hook:
                 code = [
                     "bx lr"
                 ]
-                return self._arm_assemble(self._target_addr, code, True, f"{self._name:s} (on_leave)")
+                return self._arm_assemble(self._target_addr, code, True, f"{self._name:s} (on=leave, mode={self._mode:s})")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as exc:
-            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return []

@@ -10,8 +10,8 @@ import string
 
 class memcpy(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
         self.synopsis = "void *memcpy(void *restrict dest, const void *restrict src, size_t n);"
         return
 
@@ -28,7 +28,7 @@ class memcpy(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return
 
     def on_leave(self, ctx: TritonContext) -> None:
@@ -47,22 +47,22 @@ class memcpy(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return
 
 
 class printf(base_hook):
     
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
         self.synopsis = "int printf(const char *restrict format, ...);"
         return
 
 
 class strtol(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
         self.synopsis = "long strtol(const char *restrict nptr, char **restrict endptr, int base);"
         return
 
@@ -81,7 +81,7 @@ class strtol(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return
 
     def on_leave(self, ctx: TritonContext) -> None:
@@ -279,14 +279,14 @@ class strtol(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return
 
 
 class strtoul(strtol):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
         self.synopsis = "unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base);"
         return
 
@@ -297,8 +297,8 @@ class strtoul(strtol):
     
 class strlen(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, logger: Logger = Logger()) -> None:
-        super().__init__(name, entry_addr, leave_addr, logger)
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
         self.synopsis = "size_t strlen(const char *s);"
         return
 
@@ -313,7 +313,7 @@ class strlen(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return
 
     def on_leave(self, ctx: TritonContext) -> None:
@@ -339,5 +339,5 @@ class strlen(base_hook):
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
-            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return
