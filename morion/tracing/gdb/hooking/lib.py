@@ -49,7 +49,7 @@ class base_hook:
         The concrete arguments of the function are available.
 
         The function is expected to return a list of assembly instructions in
-        the form of address, opcode, disassembly, comment tuples.
+        the form of address, opcode, disassembly and comment tuples.
 
         Within this function, only registers/memory in the context of the
         concrete execution should be accessed (not from symbolic execution).
@@ -67,7 +67,7 @@ class base_hook:
                 return self._arm_assemble(pc, code, is_thumb, f"{self._name:s} (on_entry)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
-            symbex.logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on_entry) failed: {str(e):s}")
         return []
 
     def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
@@ -77,7 +77,7 @@ class base_hook:
         concrete return value of the function is available.
             
         The function is expected to return a list of assembly instructions in
-        the form of address, opcode, disassembly, comment tuples.
+        the form of address, opcode, disassembly and comment tuples.
 
         Within this function, only registers/memory in the context of the
         concrete execution should be accessed (not from symbolic execution).
@@ -92,7 +92,7 @@ class base_hook:
                 return self._arm_assemble(self._target_addr, code, True, f"{self._name:s} (on_leave)")
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as exc:
-            symbex.logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
+            self._logger.error(f"{self._name:s} (on_leave) failed: {str(e):s}")
         return []
 
 
