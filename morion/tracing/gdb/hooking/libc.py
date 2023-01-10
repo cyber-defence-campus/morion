@@ -6,9 +6,31 @@ from morion.tracing.gdb.trace       import GdbHelper
 from typing                         import List, Tuple
 
 
+class puts(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "int puts(const char *s);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+               # Log arguments
+                s = GdbHelper.get_register_value("r0")
+                _s = GdbHelper.get_memory_string(s)
+                self._logger.debug(f"\ts   = 0x{s:08x}")
+                self._logger.debug(f"\t*s  = '{_s:s}'")
+                return super().on_entry()
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
 class strlen(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
         self.synopsis = "size_t strlen(const char *s);"
         return
@@ -19,9 +41,9 @@ class strlen(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 s = GdbHelper.get_register_value("r0")
-                s_val = GdbHelper.get_memory_string(s)
+                _s = GdbHelper.get_memory_string(s)
                 self._logger.debug(f"\ts   = 0x{s:08x}")
-                self._logger.debug(f"\t*s  = '{s_val:s}'")
+                self._logger.debug(f"\t*s  = '{_s:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:

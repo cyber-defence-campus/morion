@@ -6,6 +6,28 @@ from   morion.symbex.hooking.lib import base_hook
 from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
 
 
+class puts(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "int puts(const char *s);"
+        return
+
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._s = Helper.get_memory_string(ctx, self.s)
+                self._logger.debug(f"\ts   = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s  = '{self._s:s}'")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+
 class strlen(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:

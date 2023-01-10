@@ -10,4 +10,4 @@ target remote localhost:3000
 # Trace function `main`
 break *0x400530
 continue
-morion_trace cf.yaml 0xb6eed5a0
+morion_trace debug cf.yaml 0xb6eed5a0

@@ -11,7 +11,7 @@ class base_hook:
     Base class for simulations functions.
     """
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
         self._name = name
         self._entry_addr = entry_addr
         self._leave_addr = leave_addr

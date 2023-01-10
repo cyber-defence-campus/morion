@@ -396,10 +396,10 @@ class GdbTracer:
                 for addr in addrs:
                     if addr is None: addr = {}
                     try:
-                        entry = int(addr["entry"], base=16)
-                        leave = int(addr["leave"], base=16)
-                        target = int(addr["target"], base=16)
-                        mode = addr.get("mode", "skip").lower()
+                        entry  = int(addr.get("entry"), base=16)
+                        leave  = int(addr.get("leave"), base=16)
+                        target = int(addr.get("target", "0x1000"), base=16)
+                        mode   = addr.get("mode", "skip").lower()
                     except:
                         logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
                         continue
