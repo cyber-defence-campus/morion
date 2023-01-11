@@ -60,7 +60,7 @@ class strlen(base_hook):
                 if self._mode == "taint":
                     self._logger.warning(f"{self._name:s}: Taint mode not implemented.")
                 # Model mode
-                elif self._mode == "mode":
+                elif self._mode == "model":
                     ast = ctx.getAstContext()
                     ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
                     for i in range(0, length+1):
