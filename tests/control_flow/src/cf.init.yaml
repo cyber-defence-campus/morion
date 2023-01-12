@@ -1,23 +1,23 @@
 hooks:
   libc:
     puts:
-    - {entry: '0x400540', leave: '0x400544', mode: 'skip', target: '0x0100'}
-    - {entry: '0x40055c', leave: '0x400560', mode: 'skip', target: '0x0200'}
-    - {entry: '0x400590', leave: '0x400594', mode: 'skip', target: '0x0300'}
-    - {entry: '0x4005a4', leave: '0x4005a8', mode: 'skip', target: '0x0400'}
-    - {entry: '0x4005ac', leave: '0x4005b0', mode: 'skip', target: '0x0500'}
-    - {entry: '0x4005dc', leave: '0x4005e0', mode: 'skip', target: '0x0600'}
-    - {entry: '0x4005ec', leave: '0x4005f0', mode: 'skip', target: '0x0700'}
-    - {entry: '0x4005f8', leave: '0x4005fc', mode: 'skip', target: '0x0800'}
-    - {entry: '0x40060c', leave: '0x400610', mode: 'skip', target: '0x0900'}
-    - {entry: '0x400620', leave: '0x400624', mode: 'skip', target: '0x0a00'}
-    - {entry: '0x400634', leave: '0x400638', mode: 'skip', target: '0x0b00'}
-    - {entry: '0x400648', leave: '0x40064c', mode: 'skip', target: '0x0c00'}
-    - {entry: '0x400654', leave: '0x400658', mode: 'skip', target: '0x0d00'}
-    - {entry: '0x400670', leave: '0x400674', mode: 'skip', target: '0x0e00'}
-    - {entry: '0x40067c', leave: '0x400680', mode: 'skip', target: '0x0f00'}
+    - {entry: '0x400540', leave: '0x400544', target: '0x0100', mode: 'skip'}
+    - {entry: '0x40055c', leave: '0x400560', target: '0x0200', mode: 'skip'}
+    - {entry: '0x400590', leave: '0x400594', target: '0x0300', mode: 'skip'}
+    - {entry: '0x4005a4', leave: '0x4005a8', target: '0x0400', mode: 'skip'}
+    - {entry: '0x4005ac', leave: '0x4005b0', target: '0x0500', mode: 'skip'}
+    - {entry: '0x4005dc', leave: '0x4005e0', target: '0x0600', mode: 'skip'}
+    - {entry: '0x4005ec', leave: '0x4005f0', target: '0x0700', mode: 'skip'}
+    - {entry: '0x4005f8', leave: '0x4005fc', target: '0x0800', mode: 'skip'}
+    - {entry: '0x40060c', leave: '0x400610', target: '0x0900', mode: 'skip'}
+    - {entry: '0x400620', leave: '0x400624', target: '0x0a00', mode: 'skip'}
+    - {entry: '0x400634', leave: '0x400638', target: '0x0b00', mode: 'skip'}
+    - {entry: '0x400648', leave: '0x40064c', target: '0x0c00', mode: 'skip'}
+    - {entry: '0x400654', leave: '0x400658', target: '0x0d00', mode: 'skip'}
+    - {entry: '0x400670', leave: '0x400674', target: '0x0e00', mode: 'skip'}
+    - {entry: '0x40067c', leave: '0x400680', target: '0x0f00', mode: 'skip'}
     strlen:
-    - {entry: '0x400548', leave: '0x40054c', mode: 'model', target: '0x1000'}
+    - {entry: '0x400548', leave: '0x40054c', target: '0x1000', mode: 'model'}
 states:
   entry:
     regs:

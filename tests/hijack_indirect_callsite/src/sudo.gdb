@@ -28,4 +28,4 @@ tbreak *0x400648
 continue
 
 # Trace binary
-morion_trace debug tests/hijack_indirect_callsite/src/sudo.yaml 0xb6ef0a20
+morion_trace debug sudo.yaml 0xb6ef0a20

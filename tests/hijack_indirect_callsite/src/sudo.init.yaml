@@ -1,40 +1,41 @@
 hooks:
-  lib:
-    base_hook:
-    - {entry: '0x4005bc', leave: '0x400718', target: '0x1000'} # putchar
-    - {entry: '0x400668', leave: '0x40066c', target: '0x1000'} # strncmp
-    - {entry: '0x400700', leave: '0x400704', target: '0x1000'} # printf
-    - {entry: '0x4008bc', leave: '0x4008c0', target: '0x1000'} # printf
-    - {entry: '0x4008c8', leave: '0x4008cc', target: '0x1000'} # printf
-  libc_model:
-    strtoul:
-    - {entry: '0x40072c', leave: '0x400730', target: '0x2000'}
+  libc:
+    printf:
+    - {entry: '0x400700', leave: '0x400704', target: '0x0100', mode: 'skip'}
+    - {entry: '0x4008bc', leave: '0x4008c0', target: '0x0200', mode: 'skip'}
+    - {entry: '0x4008c8', leave: '0x4008cc', target: '0x0300', mode: 'skip'}
+    putchar:
+    - {entry: '0x4005bc', leave: '0x400718', target: '0x0400', mode: 'skip'}
+    strncmp:
+    - {entry: '0x400668', leave: '0x40066c', target: '0x0500', mode: 'skip'}
     strlen:
-    - {entry: '0x40098c', leave: '0x400990', target: '0x3000'}
-    - {entry: '0x4009c8', leave: '0x4009cc', target: '0x3000'}
+    - {entry: '0x40098c', leave: '0x400990', target: '0x0600', mode: 'model'}
+    - {entry: '0x4009c8', leave: '0x4009cc', target: '0x0700', mode: 'model'}
+    strtoul:
+    - {entry: '0x40072c', leave: '0x400730', target: '0x0800', mode: 'model'}
 states:
   entry:
-    addr: '0x00400518'
+    addr: '0x00400648'
     mems:
       # argv[1]: 'password'
-      '0xbefff6b7': ['0x70', $] # 'p'
-      '0xbefff6b8': ['0x61', $] # 'a'
-      '0xbefff6b9': ['0x73', $] # 's'
-      '0xbefff6ba': ['0x73', $] # 's'
-      '0xbefff6bb': ['0x77', $] # 'w'
-      '0xbefff6bc': ['0x6f', $] # 'o'
-      '0xbefff6bd': ['0x72', $] # 'r'
-      '0xbefff6be': ['0x64', $] # 'd'
-      '0xbefff6bf': ['0x00']
+      '0xbefffda9': ['0x70', $] # 'p'
+      '0xbefffdaa': ['0x61', $] # 'a'
+      '0xbefffdab': ['0x73', $] # 's'
+      '0xbefffdac': ['0x73', $] # 's'
+      '0xbefffdad': ['0x77', $] # 'w'
+      '0xbefffdae': ['0x6f', $] # 'o'
+      '0xbefffdaf': ['0x72', $] # 'r'
+      '0xbefffdb0': ['0x64', $] # 'd'
+      '0xbefffdb1': ['0x00']
       # argv[2]: '-c'
-      '0xbefff6c0': ['0x2d', $] # '-'
-      '0xbefff6c1': ['0x63', $] # 'c'
-      '0xbefff6c2': ['0x00']
+      '0xbefffdb2': ['0x2d', $] # '-'
+      '0xbefffdb3': ['0x63', $] # 'c'
+      '0xbefffdb4': ['0x00']
       # argv[3]: 'whoami'
-      '0xbefff6c3': ['0x77', $] # 'w'
-      '0xbefff6c4': ['0x68', $] # 'h'
-      '0xbefff6c5': ['0x6f', $] # 'o'
-      '0xbefff6c6': ['0x61', $] # 'a'
-      '0xbefff6c7': ['0x6d', $] # 'm'
-      '0xbefff6c8': ['0x69', $] # 'i'
-      '0xbefff6c9': ['0x00']
+      '0xbefffdb5': ['0x77', $] # 'w'
+      '0xbefffdb6': ['0x68', $] # 'h'
+      '0xbefffdb7': ['0x6f', $] # 'o'
+      '0xbefffdb8': ['0x61', $] # 'a'
+      '0xbefffdb9': ['0x6d', $] # 'm'
+      '0xbefffdba': ['0x69', $] # 'i'
+      '0xbefffdbb': ['0x00']
