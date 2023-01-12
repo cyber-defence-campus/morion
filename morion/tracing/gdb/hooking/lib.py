@@ -11,11 +11,12 @@ class base_hook:
     Base class for simulations functions.
     """
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         self._name = name
         self._entry_addr = entry_addr
         self._leave_addr = leave_addr
-        self._target_addr = target_addr
+        self._target_addr_bgn = target_addr
+        self._target_addr_end = target_addr
         self._mode = mode
         self._logger = logger
         self.synopsis = "base_hook"
@@ -33,6 +34,7 @@ class base_hook:
             encoding, _ = ks.asm(code_line, as_bytes=True)
             inst_trace.append((code_addr, encoding, code_line, comment))
             code_addr += len(encoding)
+        self._target_addr_end = code_addr
         return inst_trace
 
     def _arm_mov_to_reg(self, reg_name: str, value: int) -> List[str]:
@@ -43,7 +45,7 @@ class base_hook:
             f"movt {reg_name:s}, #0x{value_t:x}"
         ]
 
-    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+    def on_entry(self, code: List[str] = []) -> List[Tuple[int, bytes, str, str]]:
         """On entry hook during concrete execution.
 
         At this point, the hooked function has not yet been executed concretely.
@@ -58,20 +60,29 @@ class base_hook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                # Inject branch to Thumb state stub code
-                pc = GdbHelper.get_register_value("pc")
-                pc_rel_target = f"#{hex(self._target_addr - pc + 1):s}"
-                code = [
-                    f"blx {pc_rel_target:s}"
-                ]
                 is_thumb = GdbHelper.get_thumb_state()
-                return self._arm_assemble(pc, code, is_thumb, f"{self._name:s} (on=entry, mode={self._mode:s})")
+                # Inject branch to stub code
+                pc_rel_target = f"#{hex(self._target_addr_bgn - self._entry_addr):s}"
+                ass_branch = self._arm_assemble(
+                    code_addr = self._entry_addr,
+                    code_lines = [f"b {pc_rel_target:s}"],
+                    is_thumb = is_thumb,
+                    comment = f"{self._name:s} (on=entry, mode={self._mode:s})"
+                )
+                # Inject stub code
+                ass_code = self._arm_assemble(
+                    code_addr = self._target_addr_bgn,
+                    code_lines = code,
+                    is_thumb = is_thumb,
+                    comment = f"{self._name:s} (on=entry, mode={self._mode:s})"
+                )
+                return ass_branch + ass_code
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return []
 
-    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+    def on_leave(self, code: List[str] = []) -> List[Tuple[int, bytes, str, str]]:
         """On leave hook during concrete execution.
 
         At this point, the hooked function has been executed concretely. The
@@ -86,12 +97,24 @@ class base_hook:
         try:
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
-                # Inject Thumb state stub code
-                code = [
-                    "bx lr"
-                ]
-                return self._arm_assemble(self._target_addr, code, True, f"{self._name:s} (on=leave, mode={self._mode:s})")
+                is_thumb = GdbHelper.get_thumb_state()
+                # Inject stub code
+                ass_code = self._arm_assemble(
+                    code_addr = self._target_addr_end,
+                    code_lines = code,
+                    is_thumb = is_thumb,
+                    comment = f"{self._name:s} (on=leave, mode={self._mode:s})"
+                )
+                # Inject branch to caller
+                pc_rel_target = f"#{hex(self._leave_addr - self._target_addr_end):s}"
+                ass_branch = self._arm_assemble(
+                    code_addr = self._target_addr_end,
+                    code_lines = [f"b {pc_rel_target:s}"],
+                    is_thumb = is_thumb,
+                    comment = f"{self._name:s} (on=leave, mode={self._mode:s})"
+                )
+                return ass_code + ass_branch
             raise Exception(f"Architecture '{arch:s}' not supported.")
-        except Exception as exc:
+        except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return []

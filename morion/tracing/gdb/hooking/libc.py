@@ -6,9 +6,81 @@ from morion.tracing.gdb.trace       import GdbHelper
 from typing                         import List, Tuple
 
 
+class printf(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "int printf(const char *restrict format, ...);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                format = GdbHelper.get_register_value("r0")
+                _format = GdbHelper.get_memory_string(format)
+                self._logger.debug(f"\t format = 0x{format:08x}")
+                self._logger.debug(f"\t*format = '{_format:s}'")
+                return super().on_entry()
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\t result = {result:d}")
+                # Move result to return register r0
+                code  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
+class putchar(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "int putchar(int c);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                c = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\tc = 0x{c:02x}")
+                return super().on_entry()
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\tresult = {result:d}")
+                # Move result to return register r0
+                code  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
 class puts(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
         self.synopsis = "int puts(const char *s);"
         return
@@ -20,17 +92,76 @@ class puts(base_hook):
                # Log arguments
                 s = GdbHelper.get_register_value("r0")
                 _s = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\ts   = 0x{s:08x}")
+                self._logger.debug(f"\t s  = 0x{s:08x}")
                 self._logger.debug(f"\t*s  = '{_s:s}'")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return []
 
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\t result = {result:d}")
+                # Move result to return register r0
+                code  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
+class strncmp(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "int strncmp(const char *s1, const char *s2, size_t n);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                s1 = GdbHelper.get_register_value("r0")
+                _s1 = GdbHelper.get_memory_string(s1)
+                s2 = GdbHelper.get_register_value("r1")
+                _s2 = GdbHelper.get_memory_string(s2)
+                n = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\t s1 = 0x{s1:08x}")
+                self._logger.debug(f"\t*s1 = '{_s1:s}'")
+                self._logger.debug(f"\t s2 = 0x{s2:08x}")
+                self._logger.debug(f"\t*s2 = '{_s2:s}'")
+                self._logger.debug(f"\t  n = {n:d}")
+                return super().on_entry()
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\t result = {result:d}")
+                # Move result to return register r0
+                code  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
 
 class strlen(base_hook):
 
-    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int = 0x1000, mode: str = "skip", logger: Logger = Logger()) -> None:
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
         self.synopsis = "size_t strlen(const char *s);"
         return
@@ -42,7 +173,7 @@ class strlen(base_hook):
                 # Log arguments
                 s = GdbHelper.get_register_value("r0")
                 _s = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\ts   = 0x{s:08x}")
+                self._logger.debug(f"\t s  = 0x{s:08x}")
                 self._logger.debug(f"\t*s  = '{_s:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
@@ -56,12 +187,61 @@ class strlen(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 length = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tret = {length:d}")
+                self._logger.debug(f"\t result = {length:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", length)
-                code.append("bx lr")
-                return self._arm_assemble(self._target_addr, code, is_thumb=True, comment=f"{self._name:s} (on=leave, mode={self._mode:s})")
+                code = self._arm_mov_to_reg("r0", length)
+                return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return []
+
+
+class strtol(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "long strtol(const char *restrict nptr, char **restrict endptr, int base);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                nptr   = GdbHelper.get_register_value("r0")
+                _nptr  = GdbHelper.get_memory_string(nptr)
+                endptr = GdbHelper.get_register_value("r1")
+                base   = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\t nptr   = 0x{nptr:08x}")
+                self._logger.debug(f"\t*nptr   = '{_nptr:s}'")
+                self._logger.debug(f"\t endptr = 0x{endptr:08x}")
+                self._logger.debug(f"\t base   = {base:d}")
+                return super().on_entry()
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+    
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result   = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\t result = {result:d}")
+                # Move result to return register r0
+                code  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
+class strtoul(strtol):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "unsigned long strtoul(const char *restrict nptr, char **restrict endptr, int base);"
+        return
