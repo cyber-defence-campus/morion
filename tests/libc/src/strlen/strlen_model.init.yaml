@@ -1,7 +1,10 @@
 hooks:
-  libc_model:
+  libc:
+    printf:
+    - {entry: '0x4005b4', leave: '0x4005b8', target: '0x0100', mode: 'skip'}
+    - {entry: '0x4005d0', leave: '0x4005d4', target: '0x0200', mode: 'skip'}
     strlen:
-    - {entry: '0x400560', leave: '0x400564', target: '0x1000'}
+    - {entry: '0x400594', leave: '0x400598', target: '0x0300', mode: 'model'}
 states:
   entry:
     mems:

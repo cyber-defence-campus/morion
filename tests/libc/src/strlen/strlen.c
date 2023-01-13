@@ -1,9 +1,10 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #define BUF_LENGTH 8
 
-int main() {
+int main(int argc, char *argv[]) {
     char *s;
 
     // Buffer (will be symbolised)
@@ -11,7 +12,9 @@ int main() {
 
     // Testing strlen
     if(strlen(s) == 2) {
-        return -1;
+        printf("strlen('%s') == 2\n", s);
+        return EXIT_SUCCESS;
     }
-    return 0;
+    printf("strlen('%s') != 2\n", s);
+    return EXIT_SUCCESS;
 }
