@@ -4,6 +4,10 @@
 
 #define BUF_LENGTH 8
 
+/*
+ * size_t strlen(const char *s);
+ */
+
 int main(int argc, char *argv[]) {
     char *s;
 

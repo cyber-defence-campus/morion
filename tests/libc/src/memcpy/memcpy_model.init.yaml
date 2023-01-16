@@ -1,12 +1,12 @@
 hooks:
-  libc_model:
+  libc:
     memcpy:
-    - {entry: '0x4006a4', leave: '0x4006a8', target: '0x1000'}
+    - {entry: '0x4006a4', leave: '0x4006a8', target: '0x0100', mode: 'model'}
     strlen:
-    - {entry: '0x4006b0', leave: '0x4006b4', target: '0x2000'}
+    - {entry: '0x4006b0', leave: '0x4006b4', target: '0x0200', mode: 'model'}
     printf:
-    - {entry: '0x4006d0', leave: '0x4006d4', target: '0x3000'}
-    - {entry: '0x4006e8', leave: '0x4006ec', target: '0x3000'}
+    - {entry: '0x4006d0', leave: '0x4006d4', target: '0x0300', mode: 'skip'}
+    - {entry: '0x4006e8', leave: '0x4006ec', target: '0x0400', mode: 'skip'}
 states:
   entry:
     mems:

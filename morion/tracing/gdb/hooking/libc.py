@@ -6,6 +6,46 @@ from morion.tracing.gdb.trace       import GdbHelper
 from typing                         import List, Tuple
 
 
+class memcpy(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "void *memcpy(void *restrict dest, const void *restrict src, size_t n);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                dest = GdbHelper.get_register_value("r0")
+                src  = GdbHelper.get_register_value("r1")
+                n    = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\tdest = 0x{dest:08x}")
+                self._logger.debug(f"\tsrc  = 0x{src:08x}")
+                self._logger.debug(f"\tn    = {n:d}")
+                return super().on_entry()
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                result = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\tresult = 0x{result:08x}")
+                # Move result to return register r0
+                code = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
 class printf(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
@@ -33,7 +73,7 @@ class printf(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\t result = {result:d}")
+                self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
@@ -105,7 +145,7 @@ class puts(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\t result = {result:d}")
+                self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
@@ -149,7 +189,7 @@ class strncmp(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\t result = {result:d}")
+                self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
@@ -187,7 +227,7 @@ class strlen(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 length = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\t result = {length:d}")
+                self._logger.debug(f"\tresult = {length:d}")
                 # Move result to return register r0
                 code = self._arm_mov_to_reg("r0", length)
                 return super().on_leave(code)
@@ -229,7 +269,7 @@ class strtol(base_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result   = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\t result = {result:d}")
+                self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)

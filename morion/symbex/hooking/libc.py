@@ -7,6 +7,53 @@ from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonCont
 import re
 
 
+class memcpy(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "void *memcpy(void *restrict dest, const void *restrict src, size_t n);"
+        return
+
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                self.dest = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self.src  = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.n    = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                self._logger.debug(f"\tdest = 0x{self.dest:08x}")
+                self._logger.debug(f"\tsrc  = 0x{self.src:08x}")
+                self._logger.debug(f"\tn    = {self.n:d}")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+    def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                result = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._logger.debug(f"\tresult = 0x{result:08x}")
+                # TODO: Taint mode
+                if self._mode == "taint":
+                    self._logger.warning(f"{self._name:s}: Taint mode not implemented.")
+                # Model mode
+                elif self._mode == "model":
+                    for i in range(0, self.n):
+                        sym_exp = ctx.getSymbolicMemory(self.src+i)
+                        if sym_exp:
+                            ctx.assignSymbolicExpressionToMemory(
+                                sym_exp, MemoryAccess(self.dest+i, CPUSIZE.BYTE))
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+
 class puts(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
