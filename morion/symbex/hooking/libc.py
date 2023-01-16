@@ -176,7 +176,7 @@ class strtol(base_hook):
                     # Determine base ([2, 36] or 0)
                     base = self.base
                     if not (base >= 2 and base <= 36 or base == 0):
-                        self._logger.warning(f"strtoul: Base {base:d} is invalid.")
+                        self._logger.warning(f"strtol: Base {base:d} is invalid.")
                         return
                     if base == 0:
                         if prefix:
