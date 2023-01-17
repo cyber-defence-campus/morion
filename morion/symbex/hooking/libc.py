@@ -119,8 +119,12 @@ class strlen(base_hook):
                 if self._mode == "taint":
                     if self._taint:
                         ast = ctx.getAstContext()
-                        sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]")
-                        sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
+                        sym_var = ast.variable(ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]"))
+                        sym_exp = ctx.newSymbolicExpression(
+                            ast.ite(ast.equal(ast.bvtrue(), ast.bvtrue()),
+                            ast.bv(length, CPUSIZE.DWORD_BIT),
+                            sym_var)
+                        )
                         ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
@@ -190,18 +194,22 @@ class strtol(base_hook):
                 # Log arguments
                 _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
                 __endptr = Helper.get_memory_string(ctx, _endptr)
-                length = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                result = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self._logger.debug(f"\t *endptr = 0x{_endptr:08x}")
                 self._logger.debug(f"\t**endptr = '{__endptr:s}'")
-                self._logger.debug(f"\t  result = {length:d}")
+                self._logger.debug(f"\t  result = {result:d}")
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
                         ast = ctx.getAstContext()
-                        sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strtol]")
-                        sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
+                        sym_var = ast.variable(ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strtol]"))
+                        sym_exp = ctx.newSymbolicExpression(
+                            ast.ite(ast.equal(ast.bvtrue(), ast.bvtrue()),
+                            ast.bv(result, CPUSIZE.DWORD_BIT),
+                            sym_var)
+                        )
                         ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
-                        self._logger.debug(f"\tresult = [TAINTED]")
+                        self._logger.debug(f"\t  result = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
                     # Parse string (match spaces, sign, prefix and value)
