@@ -1,6 +1,7 @@
 # Setup
 set pagination off
 set disassembly-flavor intel
+set architecture armv7
 set arm fallback-mode arm
 
 # Target
