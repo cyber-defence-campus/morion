@@ -66,9 +66,9 @@ class puts(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._s = Helper.get_memory_string(ctx, self.s)
+                self.s_ = Helper.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s = '{self._s:s}'")
+                self._logger.debug(f"\t*s = '{self.s_:s}'")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -88,9 +88,20 @@ class strlen(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._s = Helper.get_memory_string(ctx, self.s)
+                self.s_ = Helper.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s = '{self._s:s}'")
+                self._logger.debug(f"\t*s = '{self.s_:s}'")
+                # Taint mode
+                if self._mode == "taint":
+                    self._taint = False
+                    if ctx.isRegisterSymbolized(ctx.registers.r0):
+                        self._taint = True
+                    else:
+                        for i in range(len(self.s_)):
+                            mem = MemoryAccess(self.s+i, CPUSIZE.BYTE)
+                            if ctx.isMemorySymbolized(mem):
+                                self._taint = True
+                                break
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -106,15 +117,12 @@ class strlen(base_hook):
                 self._logger.debug(f"\tresult = {length:d}")
                 # Taint mode
                 if self._mode == "taint":
-                    for i in range(len(self._s)):
-                        mem = MemoryAccess(self.s+i, CPUSIZE.BYTE)
-                        if ctx.isMemorySymbolized(mem):
-                            ast = ctx.getAstContext()
-                            sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]")
-                            sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
-                            ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
-                            self._logger.debug(f"\tresult = [TAINTED]")
-                            break
+                    if self._taint:
+                        ast = ctx.getAstContext()
+                        sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]")
+                        sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
+                        ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
+                        self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
                     ast = ctx.getAstContext()
@@ -148,11 +156,11 @@ class strtol(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._nptr = Helper.get_memory_string(ctx, self.nptr)
+                self.nptr_ = Helper.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
                 self._logger.debug(f"\t  nptr   = 0x{self.nptr:08x}")
-                self._logger.debug(f"\t *nptr   = '{self._nptr:s}'")
+                self._logger.debug(f"\t *nptr   = '{self.nptr_:s}'")
                 self._logger.debug(f"\t  endptr = 0x{self.endptr:08x}")
                 self._logger.debug(f"\t  base   = {self.base:d}")
                 return
@@ -178,7 +186,7 @@ class strtol(base_hook):
                     result = ctx.getConcreteRegisterValue(ctx.registers.r0)
 
                     # Parse string (match spaces, sign, prefix and value)
-                    match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self._nptr)
+                    match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self.nptr_)
                     spaces, sign, prefix, value = match.groups()
 
                     # Determine base ([2, 36] or 0)
@@ -217,7 +225,7 @@ class strtol(base_hook):
                     ast_sign = ast.bv(+1, CPUSIZE.DWORD_BIT)
                     ast_prefix_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
                     ast_valid_symbols_cnt = ast.bv(0, CPUSIZE.DWORD_BIT)
-                    for k in range(0, len(self._nptr)):
+                    for k in range(0, len(self.nptr_)):
                         # Get ASTs of characters k and k+1
                         ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
                         ast_ck1 = ctx.getMemoryAst(MemoryAccess(self.nptr + k + 1, CPUSIZE.BYTE))
@@ -297,7 +305,7 @@ class strtol(base_hook):
                     # Calculate (signed) sum
                     ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
                     ast_factor = ast.bv(1, CPUSIZE.DWORD_BIT)   # TODO: ast_factor might overflow when having too many valid symbols
-                    for k in reversed(range(0, len(self._nptr))):
+                    for k in reversed(range(0, len(self.nptr_))):
                         # Get AST of character k
                         ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
 
