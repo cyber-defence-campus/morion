@@ -118,14 +118,8 @@ class strlen(base_hook):
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
-                        ast = ctx.getAstContext()
-                        sym_var = ast.variable(ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]"))
-                        sym_exp = ctx.newSymbolicExpression(
-                            ast.ite(ast.equal(ast.bvtrue(), ast.bvtrue()),
-                            ast.bv(length, CPUSIZE.DWORD_BIT),
-                            sym_var)
-                        )
-                        ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
+                        ctx.concretizeRegister(ctx.registers.r0)
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strlen]")
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -201,14 +195,8 @@ class strtol(base_hook):
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
-                        ast = ctx.getAstContext()
-                        sym_var = ast.variable(ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strtol]"))
-                        sym_exp = ctx.newSymbolicExpression(
-                            ast.ite(ast.equal(ast.bvtrue(), ast.bvtrue()),
-                            ast.bv(result, CPUSIZE.DWORD_BIT),
-                            sym_var)
-                        )
-                        ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
+                        ctx.concretizeRegister(ctx.registers.r0)
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strtol]")
                         self._logger.debug(f"\t  result = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
