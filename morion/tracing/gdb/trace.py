@@ -53,6 +53,8 @@ class GdbHelper:
 
     @staticmethod
     def get_memory_value(mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
+        # Handle NULL
+        if not mem_addr: return 0
         # Examine `mem_size` bytes at address `mem_addr`
         memory = gdb.execute(f"x/{mem_size:d}xb {mem_addr:d}", to_string=True)
         # Parse address and bytes
@@ -72,9 +74,11 @@ class GdbHelper:
         return True
 
     @staticmethod
-    def get_memory_string(addr: int) -> str:
-        # Examine string at address `addr`
-        memory_string = gdb.execute(f"x/s {addr:d}", to_string=True)
+    def get_memory_string(mem_addr: int) -> str:
+        # Handle NULL
+        if not mem_addr: return ''
+        # Examine string at address `mem_addr`
+        memory_string = gdb.execute(f"x/s {mem_addr:d}", to_string=True)
         # Parse string
         pattern = r"^0x[0-9a-f]+[^:]*:[^\"]*\"([^\"]*)\".*$"
         match = re.match(pattern, memory_string)
