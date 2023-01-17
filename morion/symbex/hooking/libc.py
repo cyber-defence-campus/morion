@@ -96,12 +96,12 @@ class strlen(base_hook):
                     self._taint = False
                     if ctx.isRegisterSymbolized(ctx.registers.r0):
                         self._taint = True
-                    else:
-                        for i in range(len(self.s_)):
-                            mem = MemoryAccess(self.s+i, CPUSIZE.BYTE)
-                            if ctx.isMemorySymbolized(mem):
-                                self._taint = True
-                                break
+                        return
+                    for i in range(len(self.s_)):
+                        mem = MemoryAccess(self.s+i, CPUSIZE.BYTE)
+                        if ctx.isMemorySymbolized(mem):
+                            self._taint = True
+                            return
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -163,6 +163,20 @@ class strtol(base_hook):
                 self._logger.debug(f"\t *nptr   = '{self.nptr_:s}'")
                 self._logger.debug(f"\t  endptr = 0x{self.endptr:08x}")
                 self._logger.debug(f"\t  base   = {self.base:d}")
+                # Taint mode
+                if self._mode == "taint":
+                    self._taint = False
+                    if ctx.isRegisterSymbolized(ctx.registers.r0):
+                        self._taint = True
+                        return
+                    for i in range(len(self.nptr_)):
+                        mem = MemoryAccess(self.nptr+i, CPUSIZE.BYTE)
+                        if ctx.isMemorySymbolized(mem):
+                                self._taint = True
+                                return
+                    if ctx.isRegisterSymbolized(ctx.registers.r2):
+                        self._taint = True
+                        return
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -174,17 +188,22 @@ class strtol(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Log arguments
+                _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
+                __endptr = Helper.get_memory_string(ctx, _endptr)
                 length = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                # TODO: Taint mode
+                self._logger.debug(f"\t *endptr = 0x{_endptr:08x}")
+                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\t  result = {length:d}")
+                # Taint mode
                 if self._mode == "taint":
-                    self._logger.warning(f"{self._name:s}: Taint mode not implemented.")
+                    if self._taint:
+                        ast = ctx.getAstContext()
+                        sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strtol]")
+                        sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
+                        ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
+                        self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
-                    # Concrete result
-                    _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
-                    __endptr = Helper.get_memory_string(ctx, _endptr)
-                    result = ctx.getConcreteRegisterValue(ctx.registers.r0)
-
                     # Parse string (match spaces, sign, prefix and value)
                     match = re.fullmatch(r'(\s*)([+-]?)(0x|0X)?(.*)', self.nptr_)
                     spaces, sign, prefix, value = match.groups()
@@ -201,11 +220,6 @@ class strtol(base_hook):
                             base = 8
                         else:
                             base = 10
-                    
-                    self._logger.debug(f"\t *endptr = 0x{_endptr:08x}")
-                    self._logger.debug(f"\t**endptr = '{__endptr:s}'")
-                    self._logger.debug(f"\t  base   = {base:d}")
-                    self._logger.debug(f"\t  result = {result:d}")
 
                     # ASTs or relevant ASCII characters
                     ast = ctx.getAstContext()
@@ -353,6 +367,7 @@ class strtol(base_hook):
                         
                     # Debug output
                     self._logger.debug(f"---")
+                    self._logger.debug(f"\tBase                  : {base:d}")
                     space_cnt = ctx.evaluateAstViaSolver(ast_space_cnt)
                     self._logger.debug(f"\tNo. Space Chars       : {space_cnt:d}")
                     sign_cnt = ctx.evaluateAstViaSolver(ast_sign_cnt)
