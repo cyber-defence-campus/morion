@@ -294,7 +294,7 @@ class Executor:
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
             reg_names.add(reg_name)
         # Process registers
-        for reg_name in reg_names:
+        for reg_name in sorted(reg_names):
             reg = self.ctx.getRegister(reg_name)
             reg_value = self.ctx.getConcreteRegisterValue(reg)
             byte_mask = self._is_register_symbolic(reg_name)
@@ -320,7 +320,7 @@ class Executor:
                 continue
             mem_addrs.add(mem_addr)
         # Process memory addresses
-        for mem_addr in mem_addrs:
+        for mem_addr in sorted(mem_addrs):
             mem_value = self.ctx.getConcreteMemoryValue(mem_addr)
             byte_mask = self._is_memory_symbolic(mem_addr)
             mem_mask = "".join("$" if b else "X" for b in byte_mask)

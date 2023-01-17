@@ -186,15 +186,20 @@ class strtol(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Log arguments
-                _endptr = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
-                __endptr = Helper.get_memory_string(ctx, _endptr)
+                endptr_ = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
+                endptr__ = Helper.get_memory_string(ctx, endptr_)
                 result = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._logger.debug(f"\t *endptr = 0x{_endptr:08x}")
-                self._logger.debug(f"\t**endptr = '{__endptr:s}'")
+                self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
+                self._logger.debug(f"\t**endptr = '{endptr__:s}'")
                 self._logger.debug(f"\t  result = {result:d}")
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
+                        if self.endptr:
+                            mem = MemoryAccess(self.endptr, CPUSIZE.DWORD)
+                            ctx.concretizeMemory(mem)
+                            ctx.symbolizeMemory(mem, f"0x{self.endptr:x} [TAINT:strtol]")
+                            self._logger.debug(f"\t *endptr = [TAINTED]")
                         ctx.concretizeRegister(ctx.registers.r0)
                         ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strtol]")
                         self._logger.debug(f"\t  result = [TAINTED]")

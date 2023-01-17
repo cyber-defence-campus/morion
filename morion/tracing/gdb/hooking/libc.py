@@ -18,12 +18,12 @@ class memcpy(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                dest = GdbHelper.get_register_value("r0")
-                src  = GdbHelper.get_register_value("r1")
-                n    = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\tdest = 0x{dest:08x}")
-                self._logger.debug(f"\tsrc  = 0x{src:08x}")
-                self._logger.debug(f"\tn    = {n:d}")
+                self.dest = GdbHelper.get_register_value("r0")
+                self.src  = GdbHelper.get_register_value("r1")
+                self.n    = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\tdest = 0x{self.dest:08x}")
+                self._logger.debug(f"\tsrc  = 0x{self.src:08x}")
+                self._logger.debug(f"\tn    = {self.n:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -58,10 +58,10 @@ class printf(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                format = GdbHelper.get_register_value("r0")
-                format_ = GdbHelper.get_memory_string(format)
-                self._logger.debug(f"\t format = 0x{format:08x}")
-                self._logger.debug(f"\t*format = '{format_:s}'")
+                self.format = GdbHelper.get_register_value("r0")
+                self.format_ = GdbHelper.get_memory_string(self.format)
+                self._logger.debug(f"\t format = 0x{self.format:08x}")
+                self._logger.debug(f"\t*format = '{self.format_:s}'")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -95,8 +95,8 @@ class putchar(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                c = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tc = 0x{c:02x}")
+                self.c = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\tc = 0x{self.c:02x}")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -130,10 +130,10 @@ class puts(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                # Log arguments
-                s = GdbHelper.get_register_value("r0")
-                s_ = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\t s  = 0x{s:08x}")
-                self._logger.debug(f"\t*s  = '{s_:s}'")
+                self.s = GdbHelper.get_register_value("r0")
+                self.s_ = GdbHelper.get_memory_string(self.s)
+                self._logger.debug(f"\t s  = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s  = '{self.s_:s}'")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -167,16 +167,16 @@ class strncmp(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                s1 = GdbHelper.get_register_value("r0")
-                s1_ = GdbHelper.get_memory_string(s1)
-                s2 = GdbHelper.get_register_value("r1")
-                s2_ = GdbHelper.get_memory_string(s2)
-                n = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\t s1 = 0x{s1:08x}")
-                self._logger.debug(f"\t*s1 = '{s1_:s}'")
-                self._logger.debug(f"\t s2 = 0x{s2:08x}")
-                self._logger.debug(f"\t*s2 = '{s2_:s}'")
-                self._logger.debug(f"\t  n = {n:d}")
+                self.s1 = GdbHelper.get_register_value("r0")
+                self.s1_ = GdbHelper.get_memory_string(self.s1)
+                self.s2 = GdbHelper.get_register_value("r1")
+                self.s2_ = GdbHelper.get_memory_string(self.s2)
+                self.n = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\t s1 = 0x{self.s1:08x}")
+                self._logger.debug(f"\t*s1 = '{self.s1_:s}'")
+                self._logger.debug(f"\t s2 = 0x{self.s2:08x}")
+                self._logger.debug(f"\t*s2 = '{self.s2_:s}'")
+                self._logger.debug(f"\t  n = {self.n:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -211,10 +211,10 @@ class strlen(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                s = GdbHelper.get_register_value("r0")
-                s_ = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\t s  = 0x{s:08x}")
-                self._logger.debug(f"\t*s  = '{s_:s}'")
+                self.s = GdbHelper.get_register_value("r0")
+                self.s_ = GdbHelper.get_memory_string(self.s)
+                self._logger.debug(f"\t s  = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s  = '{self.s_:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -249,14 +249,14 @@ class strtol(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                nptr   = GdbHelper.get_register_value("r0")
-                nptr_  = GdbHelper.get_memory_string(nptr)
-                endptr = GdbHelper.get_register_value("r1")
-                base   = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\t nptr   = 0x{nptr:08x}")
-                self._logger.debug(f"\t*nptr   = '{nptr_:s}'")
-                self._logger.debug(f"\t endptr = 0x{endptr:08x}")
-                self._logger.debug(f"\t base   = {base:d}")
+                self.nptr   = GdbHelper.get_register_value("r0")
+                self.nptr_  = GdbHelper.get_memory_string(self.nptr)
+                self.endptr = GdbHelper.get_register_value("r1")
+                self.base   = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\t nptr   = 0x{self.nptr:08x}")
+                self._logger.debug(f"\t*nptr   = '{self.nptr_:s}'")
+                self._logger.debug(f"\t endptr = 0x{self.endptr:08x}")
+                self._logger.debug(f"\t base   = {self.base:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -268,11 +268,17 @@ class strtol(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
+                endptr_ = GdbHelper.get_memory_value(self.endptr)
+                endptr__ = GdbHelper.get_memory_string(endptr_)
                 result   = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
+                self._logger.debug(f"\t**endptr = '{endptr__:s}'")
+                self._logger.debug(f"\t  result = {result:d}")
+                # Move *endptr to memory endptr
+                code_endptr = self._arm_mov_to_mem(self.endptr, endptr_)
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
-                return super().on_leave(code)
+                code_result  = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code_endptr + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
