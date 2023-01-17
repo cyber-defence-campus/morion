@@ -1,0 +1,18 @@
+hooks:
+  libc:
+    printf:
+    - {entry: '0x4005b4', leave: '0x4005b8', target: '0x0100', mode: 'skip'}
+    - {entry: '0x4005d0', leave: '0x4005d4', target: '0x0200', mode: 'skip'}
+    strlen:
+    - {entry: '0x400594', leave: '0x400598', target: '0x0300', mode: 'taint'}
+states:
+  entry:
+    mems:
+      '0x00412190': ['0x41']
+      '0x00412191': ['0x42', $]
+      '0x00412192': ['0x43', $]
+      '0x00412193': ['0x44']
+      '0x00412194': ['0x45', $]
+      '0x00412195': ['0x46']
+      '0x00412196': ['0x47']
+      '0x00412197': ['0x00']

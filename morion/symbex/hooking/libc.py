@@ -104,9 +104,17 @@ class strlen(base_hook):
                 # Log arguments
                 length = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self._logger.debug(f"\tresult = {length:d}")
-                # TODO: Taint mode
+                # Taint mode
                 if self._mode == "taint":
-                    self._logger.warning(f"{self._name:s}: Taint mode not implemented.")
+                    for i in range(len(self._s)):
+                        mem = MemoryAccess(self.s+i, CPUSIZE.BYTE)
+                        if ctx.isMemorySymbolized(mem):
+                            ast = ctx.getAstContext()
+                            sym_var = ctx.newSymbolicVariable(CPUSIZE.DWORD_BIT, f"r0 [TAINT:strlen]")
+                            sym_exp = ctx.newSymbolicExpression(ast.variable(sym_var))
+                            ctx.assignSymbolicExpressionToRegister(sym_exp, ctx.getRegister("r0"))
+                            self._logger.debug(f"\tresult = [TAINTED]")
+                            break
                 # Model mode
                 elif self._mode == "model":
                     ast = ctx.getAstContext()
