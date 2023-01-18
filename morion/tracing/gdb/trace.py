@@ -328,9 +328,9 @@ class GdbTracer:
                             mem_value = self._get_memory_value(mem_addr+i, CPUSIZE.BYTE)
                             self._accessed_mems[mem_addr+i] = mem_value
                             self._recorder.add_concrete_memory(mem_addr+i, mem_value, is_entry=True)
-                            logger.debug(f"\t0x{mem_addr+i:x} = 0x{mem_value:02x}")
+                            logger.debug(f"\t0x{mem_addr+i:08x} = 0x{mem_value:02x}")
                     except Exception as exc:
-                        logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:x}: '{str(exc):s}'")
+                        logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:08x}: '{str(exc):s}'")
             
             # Step over instruction
             gdb.execute("stepi")
@@ -387,7 +387,7 @@ class GdbTracer:
             mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
             self._accessed_mems[mem_addr] = mem_value
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
-            logger.debug(f"\t0x{mem_addr:x} = 0x{mem_value:x}")
+            logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x}")
                 
         # Set hooks
         logger.debug("Hooks:")
@@ -423,14 +423,14 @@ class GdbTracer:
                                                symbol=f"{m_name:s}:{c_name:s} (on=entry, mode={mode:s})",
                                                function=ci.on_entry,
                                                return_addr=leave)
-                            logger.debug(f"\t0x{entry:x} '{m_name:s}:{c_name:s} (on=entry, mode={mode:s})'")
+                            logger.debug(f"\t0x{entry:08x} '{m_name:s}:{c_name:s} (on=entry, mode={mode:s})'")
 
                             # Register hook at leave address
                             self._addr_mapper.add(addr=leave,
                                                symbol=f"{m_name:s}:{c_name:s} (on=leave, mode={mode:s})",
                                                function=ci.on_leave,
                                                return_addr=None)
-                            logger.debug(f"\t0x{leave:x} '{m_name:s}:{c_name:s} (on=leave, mode={mode:s})'")
+                            logger.debug(f"\t0x{leave:08x} '{m_name:s}:{c_name:s} (on=leave, mode={mode:s})'")
         logger.info(f"... finished loading trace file '{trace_file:s}'.")
         return True
 

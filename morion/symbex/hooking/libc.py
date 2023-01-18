@@ -319,7 +319,7 @@ class strtol(base_hook):
 
                     # Calculate (signed) sum
                     ast_sum = ast.bv(0, CPUSIZE.DWORD_BIT)
-                    ast_factor = ast.bv(1, CPUSIZE.DWORD_BIT)   # TODO: ast_factor might overflow when having too many valid symbols
+                    ast_factor = ast.bv(1, CPUSIZE.DWORD_BIT)                                       # TODO: ast_factor might overflow when having too many valid symbols
                     for k in reversed(range(0, len(self.nptr_))):
                         # Get AST of character k
                         ast_ck = ctx.getMemoryAst(MemoryAccess(self.nptr + k, CPUSIZE.BYTE))
