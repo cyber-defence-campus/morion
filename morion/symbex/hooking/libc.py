@@ -24,6 +24,20 @@ class memcpy(base_hook):
                 self._logger.debug(f"\tdest = 0x{self.dest:08x}")
                 self._logger.debug(f"\tsrc  = 0x{self.src:08x}")
                 self._logger.debug(f"\tn    = {self.n:d}")
+                # Taint mode
+                if self._mode == "taint":
+                    self._taint_dest   = False
+                    self._taint_result = False
+                    if ctx.isRegisterSymbolized(ctx.registers.r0):
+                        self._taint_result = True
+                    if ctx.isRegisterSymbolized(ctx.registers.r1) or ctx.isRegisterSymbolized(ctx.registers.r2):
+                        self._taint_dest = True
+                    else:
+                        for i in range(self.n):
+                            mem = MemoryAccess(self.src+i, CPUSIZE.BYTE)
+                            if ctx.isMemorySymbolized(mem):
+                                self._taint_dest = True
+                                break
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -36,10 +50,20 @@ class memcpy(base_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 result = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self._logger.debug(f"\tresult = 0x{result:08x}")
-                # TODO: Taint mode
+                self._logger.debug(f"\tresult      = 0x{result:08x}")
+                # Taint mode
                 if self._mode == "taint":
-                    self._logger.warning(f"{self._name:s}: Taint mode not implemented.")
+                    if self._taint_dest:
+                        for i in range(self.n):
+                            mem_addr = self.dest+i
+                            mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
+                            ctx.concretizeMemory(mem)
+                            ctx.symbolizeMemory(mem, "0x{mem_addr:08x} [TAINT:memcpy]")
+                            self._logger.debug(f"\tdest[{i:d}] = [TAINT:memcpy]")
+                    if self._taint_result:
+                        ctx.concretizeRegister(ctx.registers.r0)
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcpy]")
+                        self._logger.debug(f"\tresult      = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
                     for i in range(0, self.n):
@@ -198,7 +222,7 @@ class strtol(base_hook):
                         if self.endptr:
                             mem = MemoryAccess(self.endptr, CPUSIZE.DWORD)
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, f"0x{self.endptr:x} [TAINT:strtol]")
+                            ctx.symbolizeMemory(mem, f"0x{self.endptr:08x} [TAINT:strtol]")
                             self._logger.debug(f"\t *endptr = [TAINTED]")
                         ctx.concretizeRegister(ctx.registers.r0)
                         ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strtol]")

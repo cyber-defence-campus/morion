@@ -1,0 +1,28 @@
+hooks:
+  libc:
+    memcpy:
+    - {entry: '0x4006a4', leave: '0x4006a8', target: '0x0100', mode: 'taint'}
+    strlen:
+    - {entry: '0x4006b0', leave: '0x4006b4', target: '0x0200', mode: 'taint'}
+    printf:
+    - {entry: '0x4006d0', leave: '0x4006d4', target: '0x0300', mode: 'skip'}
+    - {entry: '0x4006e8', leave: '0x4006ec', target: '0x0400', mode: 'skip'}
+states:
+  entry:
+    mems:
+      '0x004121a8': [$$]
+      '0x004121a9': [$$]
+      '0x004121aa': [$$]
+      '0x004121ab': [$$]
+      '0x004121ac': [$$]
+      '0x004121ad': [$$]
+      '0x004121ae': [$$]
+      '0x004121af': [$$]
+      '0x004121b0': [$$]
+      '0x004121b1': [$$]
+      '0x004121b2': [$$]
+      '0x004121b3': [$$]
+      '0x004121b4': [$$]
+      '0x004121b5': [$$]
+      '0x004121b6': [$$]
+      '0x004121b7': [$$]

@@ -37,9 +37,14 @@ class memcpy(base_hook):
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
                 self._logger.debug(f"\tresult = 0x{result:08x}")
+                # Move src[i] to dest[i]
+                code_cpy = []
+                for i in range(self.n):
+                    mem_val = GdbHelper.get_memory_value(self.src+i, 1)
+                    code_cpy.extend(self._arm_mov_to_mem(self.dest+i, mem_val))
                 # Move result to return register r0
-                code = self._arm_mov_to_reg("r0", result)
-                return super().on_leave(code)
+                code_result = self._arm_mov_to_reg("r0", result)
+                return super().on_leave(code_cpy + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
