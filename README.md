@@ -33,26 +33,26 @@ sudo ln -s\
 git clone https://github.com/pdamian/morion.git && cd morion/
 ```
 2. Use a Python virtual enviroment (optional, but recommended):
-   - GDB uses the system-installed Python interpreter and the corresponding site-packages, even when using a Python virtual environment. In order to fix that, add the following to your `.gdbinit` file:    
+- GDB uses the system-installed Python interpreter and the corresponding site-packages, even when using a Python virtual environment. In order to fix that, add the following to your `.gdbinit` file:    
 ```shell
 cat << EOF >> ~/.gdbinit
 
 # Update GDB's Python paths with the ones from the local Python installation (e.g. to support virtual environments)
 python
 import os, subprocess, sys
-paths = subprocess.check_output('python -c "import os,sys;print(os.linesep.join(sys.path).strip())"',shell=True).decode("utf-8").split()
+paths = subprocess.check_output('python -c "import os, sys;print(os.linesep.join(sys.path).strip())"', shell=True).decode("utf-8").split()
 sys.path.extend(paths)
 end
 EOF
 ```
-   - Create a virtual environment (with access to the system's site-packages to reach the Triton Python bindings)
+- Create a virtual environment (with access to the system's site-packages to reach the Triton Python bindings)
 ```shell
 python3 -mvenv venvs/morion --system-site-packages
 source venvs/morion/bin/activate
 ```
 3. Install the package (add `-e` for editable mode):
 ```shell
-(morion) pip install .
+pip install .
 ```
 ## Usage
 ### Tracing
@@ -62,13 +62,21 @@ gdb -q -x morion/tracing/gdb/trace.py
 (gdb) morion_trace                    # Show usage
 (gdb) help target                     # Attach to target binary
 ```
+The `.gdbinit` file can be updated to automatically register Morion's tracing command at each launch of GDB:
+```shell
+cat << EOF >> ~/.gdbinit
+
+# Register Morion's trace command `morion_trace` with GDB 
+source $PWD/Tools/Morion/morion/tracing/gdb/trace.py
+EOF
+```
 ### Symbolic Execution
 Symbolic execution of a binary's program trace:
 ```shell
-(morion) morion -h                   # Perform symbolic execution
-(morion) morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
-(morion) morion_control_hijacker -h  # Use symbolic execution to identify potential control flow hijacks
-(morion) morion_memory_hijacker  -h  # Use symbolic execution to identify potential memory hijacks
-(morion) morion_branch_analyzer  -h  # Use symbolic execution to analyze branches
-(morion) morion_path_analyzer    -h  # Use symbolic execution to analyze paths
+morion -h                   # Perform symbolic execution
+morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
+morion_control_hijacker -h  # Use symbolic execution to identify potential control flow hijacks
+morion_memory_hijacker  -h  # Use symbolic execution to identify potential memory hijacks
+morion_branch_analyzer  -h  # Use symbolic execution to analyze branches
+morion_path_analyzer    -h  # Use symbolic execution to analyze paths
 ```
