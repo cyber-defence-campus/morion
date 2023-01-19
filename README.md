@@ -32,8 +32,8 @@ sudo ln -s\
 ```shell
 git clone https://github.com/pdamian/morion.git && cd morion/
 ```
-2. Optional (but recommended):
-- Update GDB's Python paths with the ones from the local Python installation
+2. Use a Python virtual enviroment (optional, but recommended):
+   - GDB uses the system-installed Python interpreter and the corresponding site-packages, even when using a Python virtual environment. In order to fix that, add the following to your `.gdbinit` file:    
 ```shell
 cat << EOF >> ~/.gdbinit
 
@@ -45,7 +45,7 @@ sys.path.extend(paths)
 end
 EOF
 ```
-- Create a virtual environment (with access to the system's site-packages to reach the Triton Python bindings)
+   - Create a virtual environment (with access to the system's site-packages to reach the Triton Python bindings)
 ```shell
 python3 -mvenv venvs/morion --system-site-packages
 source venvs/morion/bin/activate
