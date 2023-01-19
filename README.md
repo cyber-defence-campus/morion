@@ -66,8 +66,8 @@ The `.gdbinit` file can be updated to automatically register Morion's tracing co
 ```shell
 cat << EOF >> ~/.gdbinit
 
-# Register Morion's trace command `morion_trace` with GDB 
-source $PWD/Tools/Morion/morion/tracing/gdb/trace.py
+# Register Morion's trace command 'morion_trace' with GDB 
+source $PWD/tracing/gdb/trace.py
 EOF
 ```
 ### Symbolic Execution
