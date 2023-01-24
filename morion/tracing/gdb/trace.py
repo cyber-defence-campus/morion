@@ -12,6 +12,7 @@ from   morion.map         import AddressMapper
 from   morion.record      import Recorder
 from   morion.tracing.gdb import hooking
 from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction, MODE, OPERAND, TritonContext
+from   typing             import Tuple
 
 
 logger = Logger()
@@ -87,7 +88,7 @@ class GdbHelper:
         return ''
 
     @staticmethod
-    def get_instruction() -> (int, bytes, str):
+    def get_instruction() -> Tuple[int, bytes, str]:
         pc = GdbHelper.get_register_value("pc")
         opcode = GdbHelper.get_memory_value(pc)
         opcode = opcode.to_bytes((opcode.bit_length() + 7) // 8, byteorder=GdbHelper.get_byteorder())
@@ -107,7 +108,6 @@ class GdbTraceCommand(gdb.Command):
     def __init__(self, name: str) -> None:
         super().__init__(name, gdb.COMMAND_OBSCURE)
         self._name = name
-        self._tracer = GdbTracer()
         return
 
     def _parse_args(self, args: str) -> bool:
@@ -117,11 +117,14 @@ class GdbTraceCommand(gdb.Command):
                 raise Exception("Invalid number of arguments.")
             c = 0
             # Parse debug flag
+            global logger
             if argv[c] == "debug":
-                global logger
                 logger = Logger("debug")
                 c += 1
+            else:
+                logger = Logger("info")
             # Parse trace file
+            self._tracer = GdbTracer()
             self._trace_file = argv[c]
             if not self._tracer.load(argv[c]):
                 raise Exception("Cannot load trace file.")

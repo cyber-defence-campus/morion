@@ -4,7 +4,7 @@ from    morion.log                import Logger
 from    morion.symbex.execute     import Helper
 from    morion.symbex.hooking.lib import base_hook
 from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
-import re
+import  re
 
 
 class memcpy(base_hook):
