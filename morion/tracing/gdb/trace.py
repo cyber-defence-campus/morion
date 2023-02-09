@@ -329,9 +329,10 @@ class GdbTracer:
                         # Store memory value on first access
                         if mem_addr+i not in self._accessed_mems:
                             mem_value = self._get_memory_value(mem_addr+i, CPUSIZE.BYTE)
+                            mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                             self._accessed_mems[mem_addr+i] = mem_value
                             self._recorder.add_concrete_memory(mem_addr+i, mem_value, is_entry=True)
-                            logger.debug(f"\t0x{mem_addr+i:08x} = 0x{mem_value:02x}")
+                            logger.debug(f"\t0x{mem_addr+i:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
                     except Exception as exc:
                         logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:08x}: '{str(exc):s}'")
             
@@ -388,9 +389,10 @@ class GdbTracer:
                 except:
                     continue
             mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
+            mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
             self._accessed_mems[mem_addr] = mem_value
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
-            logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x}")
+            logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
                 
         # Set hooks
         logger.debug("Hooks:")

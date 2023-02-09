@@ -89,8 +89,9 @@ class Executor:
                 for mem_value in mem_values:
                     if not isinstance(mem_value, int):
                         mem_value = int(mem_value, base=0)
+                    mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                     self.ctx.setConcreteMemoryValue(mem_addr, mem_value)
-                    self._logger.debug(f"\t0x{mem_addr:08x}=0x{mem_value:02x}")
+                    self._logger.debug(f"\t0x{mem_addr:08x}=0x{mem_value:02x} {mem_value_chr:s}")
             except:
                 continue
         # Set symbolic register values
