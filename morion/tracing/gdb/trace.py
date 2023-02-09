@@ -91,7 +91,7 @@ class GdbHelper:
     def get_instruction() -> Tuple[int, bytes, str]:
         pc = GdbHelper.get_register_value("pc")
         opcode = GdbHelper.get_memory_value(pc)
-        opcode = opcode.to_bytes((opcode.bit_length() + 7) // 8, byteorder=GdbHelper.get_byteorder())
+        opcode = opcode.to_bytes(CPUSIZE.DWORD, byteorder=GdbHelper.get_byteorder())
         try:
             source = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True).splitlines()[1]
             match = re.match(r"^([0-9]+)\t\s*(.*)$", source)
