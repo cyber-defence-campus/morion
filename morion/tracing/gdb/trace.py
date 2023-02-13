@@ -90,7 +90,7 @@ class GdbHelper:
     @staticmethod
     def get_instruction() -> Tuple[int, bytes, str]:
         pc = GdbHelper.get_register_value("pc")
-        opcode = GdbHelper.get_memory_value(pc)
+        opcode = GdbHelper.get_memory_value(pc, CPUSIZE.DWORD)
         opcode = opcode.to_bytes(CPUSIZE.DWORD, byteorder=GdbHelper.get_byteorder())
         try:
             source = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True).splitlines()[1]
