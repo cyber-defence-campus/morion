@@ -98,6 +98,27 @@ class GdbHelper:
             source = f"L{match.group(1)}: `{match.group(2):s}`"
         except Exception as e:
             source = ""
+        
+        # # Disassemble instruction at program counter
+        # try:
+        #     dis    = gdb.execute(f"disassemble /r $pc,+1", to_string=True)
+        #     dis    = dis.splitlines()[1]
+        #     reg    = re.match(r"^=>\s*(0x[0-9a-f]+)[^\t]*\t([^\t]*)\t", dis)
+        #     pc     = int(reg.group(1), base=16)
+        #     opcode = bytes.fromhex(reg.group(2))
+        # except Exception as e:
+        #     logger.error(f"Failed to disassemble current instruction: {str(e):s}")
+        #     return [0, b'', '']
+
+        # # List corresponding source code line (if available)
+        # try:
+        #     src    = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True)
+        #     src    = src.splitlines()[1]
+        #     reg    = re.match(r"^([0-9]+)\t\s*(.*)$", src)
+        #     source = f"L{reg.group(1)}: `{reg.group(2):s}`"
+        # except Exception as e:
+        #     source = ""
+
         return pc, opcode, source
 
 
