@@ -11,5 +11,9 @@ target remote localhost:3000
 tbreak *0x400588
 continue
 
+# Echo s
+echo s: \n
+i r r0
+
 # Trace binary
 morion_trace debug strlen_model.yaml 0xb6eed5a0
