@@ -458,15 +458,19 @@ class GdbTracer:
                         target = int(addr["target"], base=16)
                         mode   = addr.get("mode", "skip").lower()
                     except:
-                        logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed)")
+                        logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed: invalid parameter)")
                         continue
                     # Register corresponding hook functions
                     for _, m_name, _ in pkgutil.iter_modules([os.path.dirname(hooking.__file__)]):
-                        if m_name != lib: continue
+                        if m_name != lib:
+                            logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed: library not found)")
+                            continue
                         module = importlib.import_module(f"morion.tracing.gdb.hooking.{m_name:s}")
                         classes = inspect.getmembers(module, predicate=inspect.isclass)
                         for c_name, c in classes:
-                            if c_name != fun: continue
+                            if c_name != fun:
+                                logger.warning(f"\tHook: '{lib:s}:{fun:s}' (failed: function not found)")
+                                continue
 
                             # Instantiate class
                             ci = c(f"{m_name:s}:{c_name:s}", entry, leave, target, mode, logger)
