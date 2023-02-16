@@ -11,7 +11,7 @@ from   morion.log         import Logger
 from   morion.map         import AddressMapper
 from   morion.record      import Recorder
 from   morion.tracing.gdb import hooking
-from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction, MODE, OPERAND, TritonContext
+from   triton             import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction, MODE, OPCODE, OPERAND, TritonContext
 from   typing             import Tuple
 
 
@@ -26,34 +26,52 @@ class GdbHelper:
     def get_byteorder() -> str:
         cpsr = int(gdb.parse_and_eval("$cpsr"))
         return "big" if (cpsr & 0x100) != 0x0 else "little"
-
+    
     @staticmethod
     def get_architecture() -> str:
         frame = gdb.selected_frame()
-        arch = frame.architecture()
-        return arch.name()
+        arch  = frame.architecture().name()
+        return arch
 
     @staticmethod
     def get_thumb_state() -> bool:
         cpsr = int(gdb.parse_and_eval("$cpsr"))
         return (cpsr & 0x20) != 0x0
-
+    
     @staticmethod
     def get_register_value(reg_name: str) -> int:
-        value = gdb.parse_and_eval(f"${reg_name:s}")
-        return int(value.cast(gdb.lookup_type('unsigned int')))
+
+        def get_reg_val(reg_name: str) -> int:
+            value = gdb.parse_and_eval(f"${reg_name:s}")
+            return int(value.cast(gdb.lookup_type('unsigned int')))
+
+        arch = GdbHelper.get_architecture()
+        if arch in ["armv6", "armv7"]:
+            # CPSR negative flag
+            if reg_name == 'n':
+                cpsr = get_reg_val("cpsr")
+                return cpsr >> 31 & 1
+            # CPSR zero flag
+            elif reg_name == 'z':
+                cpsr = get_reg_val("cpsr")
+                return cpsr >> 30 & 1
+            # CPSR carry flag
+            elif reg_name == 'c':
+                cpsr = get_reg_val("cpsr")
+                return cpsr >> 29 & 1
+            # CPSR overflow flag
+            elif reg_name == 'v':
+                cpsr = get_reg_val("cpsr")
+                return cpsr >> 28 & 1
+        return get_reg_val(reg_name)
 
     @staticmethod
-    def set_register_value(reg_name: str, reg_value: int) -> bool:
-        try:
-            gdb.parse_and_eval(f"${reg_name:s} = {reg_value:d}")
-        except Exception as e:
-            logger.warning(f"Failed to set register '{reg_name:s}': {str(e):s}")
-            return False
-        return True
+    def set_register_value(reg_name: str, reg_value: int) -> None:
+        gdb.parse_and_eval(f"${reg_name:s} = {reg_value:d}")
+        return
 
     @staticmethod
-    def get_memory_value(mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
+    def get_memory_value(mem_addr: int, mem_size: int = CPUSIZE.QWORD) -> int:
         # Handle NULL
         if not mem_addr: return 0
         # Examine `mem_size` bytes at address `mem_addr`
@@ -66,13 +84,9 @@ class GdbHelper:
         return int.from_bytes(mem_value, byteorder=GdbHelper.get_byteorder(), signed=False)
 
     @staticmethod
-    def set_memory_value(mem_addr: int, mem_value: int) -> bool:
-        try:
-            gdb.parse_and_eval(f"{{unsigned char}} 0x{mem_addr:x} = 0x{mem_value:x}")
-        except Exception as e:
-            logger.warning(f"Failed to set memory at address '0x{mem_addr:x}': {str(e):s}")
-            return False
-        return True
+    def set_memory_value(mem_addr: int, mem_value: int) -> None:
+        gdb.parse_and_eval(f"{{unsigned char}} 0x{mem_addr:x} = 0x{mem_value:x}")
+        return
 
     @staticmethod
     def get_memory_string(mem_addr: int) -> str:
@@ -88,38 +102,26 @@ class GdbHelper:
         return ''
 
     @staticmethod
-    def get_instruction() -> Tuple[int, bytes, str]:
-        pc = GdbHelper.get_register_value("pc")
-        opcode = GdbHelper.get_memory_value(pc, CPUSIZE.DWORD)
-        opcode = opcode.to_bytes(CPUSIZE.DWORD, byteorder=GdbHelper.get_byteorder())
+    def get_instruction(addr: int = None) -> Tuple[int, bytes, str]:
+        # Get opcodes at given address (or program counter)
         try:
-            source = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True).splitlines()[1]
-            match = re.match(r"^([0-9]+)\t\s*(.*)$", source)
-            source = f"L{match.group(1)}: `{match.group(2):s}`"
+            if addr is None:
+                addr = GdbHelper.get_register_value("pc")
+            border = GdbHelper.get_byteorder()
+            opcode = GdbHelper.get_memory_value(addr, CPUSIZE.QWORD)
+            opcode = opcode.to_bytes(CPUSIZE.QWORD, byteorder=border)
         except Exception as e:
-            source = ""
-        
-        # # Disassemble instruction at program counter
-        # try:
-        #     dis    = gdb.execute(f"disassemble /r $pc,+1", to_string=True)
-        #     dis    = dis.splitlines()[1]
-        #     reg    = re.match(r"^=>\s*(0x[0-9a-f]+)[^\t]*\t([^\t]*)\t", dis)
-        #     pc     = int(reg.group(1), base=16)
-        #     opcode = bytes.fromhex(reg.group(2))
-        # except Exception as e:
-        #     logger.error(f"Failed to disassemble current instruction: {str(e):s}")
-        #     return [0, b'', '']
-
-        # # List corresponding source code line (if available)
-        # try:
-        #     src    = gdb.execute(f"list *0x{pc:x}, *0x{pc:x}", to_string=True)
-        #     src    = src.splitlines()[1]
-        #     reg    = re.match(r"^([0-9]+)\t\s*(.*)$", src)
-        #     source = f"L{reg.group(1)}: `{reg.group(2):s}`"
-        # except Exception as e:
-        #     source = ""
-
-        return pc, opcode, source
+            logger.error(f"Failed to load opcodes at address 0x{addr:08x}: {str(e):s}")
+            return None, None, None
+        # Get source code line (if available)
+        try:
+            gdbout = gdb.execute(f"list *0x{addr:x}, *0x{addr:x}", to_string=True)
+            gdbout = gdbout.splitlines()[1]
+            rmatch = re.match(r"^([0-9]+)\t\s*(.*)$", gdbout)
+            code   = f"L{rmatch.group(1)}: `{rmatch.group(2):s}`"
+        except Exception as e:
+            code = ""
+        return addr, opcode, code
 
 
 class GdbTraceCommand(gdb.Command):
@@ -198,92 +200,35 @@ class GdbTracer:
             logger.critical(f"Architecture '{arch:s}' not supported.")
             sys.exit("Unsupported architecture.")
         return ctx
-
-    def _get_architecture(self) -> str:
-        arch = GdbHelper.get_architecture()
-        if not arch in ["armv6", "armv7"]:
-            logger.critical(f"Architecture '{arch:s}' not supported.")
-            sys.exit("Unsupported architecture.")
-        return arch
-    
-    def _get_register_value(self, reg_name: str) -> int:
-        reg_value = 0x0
-        arch = self._get_architecture()
-        if arch in ["armv6", "armv7"]:
-            # CPSR negative flag
-            if reg_name == 'n':
-                cpsr = GdbHelper.get_register_value("cpsr")
-                reg_value = cpsr >> 31 & 1
-            # CPSR zero flag
-            elif reg_name == 'z':
-                cpsr = GdbHelper.get_register_value("cpsr")
-                reg_value = cpsr >> 30 & 1
-            # CPSR carry flag
-            elif reg_name == 'c':
-                cpsr = GdbHelper.get_register_value("cpsr")
-                reg_value = cpsr >> 29 & 1
-            # CPSR overflow flag
-            elif reg_name == 'v':
-                cpsr = GdbHelper.get_register_value("cpsr")
-                reg_value = cpsr >> 28 & 1
-            # General purpose registers
-            else:
-                reg_value = GdbHelper.get_register_value(reg_name)
-        return reg_value
-
-    def _get_memory_value(self, mem_addr: int, mem_size: int = CPUSIZE.DWORD) -> int:
-        return GdbHelper.get_memory_value(mem_addr, mem_size)
-
-    def _process(self, inst: Instruction, ctx: TritonContext) -> bool:
-        # Disassembling
-        try:
-            ctx.disassembly(inst)
-        except Exception as exc:
-            logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
-            return False
-        # Building semantics
-        try:
-            supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
-        except Exception as exc:
-            logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
-            return False
-        return supported
     
     def run(self) -> bool:
         logger.info("Start tracing...")
         # Store architecture information
         info = {
-            "arch": self._get_architecture()
+            "arch": GdbHelper.get_architecture()
         }
         if info["arch"] in ["armv6", "armv7"]:
             info["thumb"] = GdbHelper.get_thumb_state()
         self._recorder.add_info(**info)
         
         # Store initial program counter value
-        pc = self._get_register_value("pc")
+        pc = GdbHelper.get_register_value("pc")
         self._accessed_regs["pc"] = pc
         self._recorder.add_address(pc, True)
 
-        while True:
-            # Create instruction
-            pc, opcode, source = GdbHelper.get_instruction()
-            inst = Instruction(pc, opcode)
-
-            # Stop condition
-            if not pc or pc in self._stop_addrs: break
-
-            # Execute hook functions
-            entry_hook_funs, hook_return_addr = self._addr_mapper.get_hooks(pc)
+        def execute_hook_functions(inst: Instruction) -> bool:
+            addr = inst.getAddress()
+            entry_hook_funs, hook_return_addr = self._addr_mapper.get_hooks(addr)
             leave_hook_funs, _ = self._addr_mapper.get_hooks(hook_return_addr)
             if hook_return_addr is not None:
                 # Execute entry hooks
                 for entry_hook_fun in entry_hook_funs:
-                    symbols = self._addr_mapper.get_symbols(pc)
+                    symbols = self._addr_mapper.get_symbols(addr)
                     symbols = ", ".join(s for s in symbols if s)
                     logger.debug(f"--- Hook: '{symbols:s}'")
                     logger.debug(f"---       '{entry_hook_fun.__self__.synopsis:s}'")
                     for addr, opcode, disassembly, comment in entry_hook_fun():
-                        self._recorder.add_instruction(addr, opcode, disassembly, f"Hook: {comment:s}")
+                        self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
                 
                 # Run concrete execution till return address
                 gdb.execute(f"tbreak *{hook_return_addr:d}")
@@ -294,19 +239,39 @@ class GdbTracer:
                     symbols = self._addr_mapper.get_symbols(hook_return_addr)
                     symbols = ", ".join(s for s in symbols if s)
                     for addr, opcode, disassembly, comment in leave_hook_fun():
-                        self._recorder.add_instruction(addr, opcode, disassembly, f"Hook: {comment:s}")
+                        self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
                     logger.debug(f"--- Hook: '{symbols:s}'")
 
-                # Go to beginning of while loop
-                continue
+                # Address was hooked
+                return True
 
+            # Address was not hooked
+            return False
+
+        def process_instruction(inst: Instruction, ctx: TritonContext = None) -> bool:
+            # Disassembling
+            if ctx is None: ctx = self._init_context()
+            try:
+                ctx.disassembly(inst)
+            except Exception as exc:
+                logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
+                return False
+            # Building semantics
+            try:
+                supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
+            except Exception as exc:
+                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
+                return False
+            return supported
+
+        def record_reg_mem_accesses(inst: Instruction, code: str = "") -> Tuple[bool, TritonContext]:
             # Create fresh context
             rctx = self._init_context()
             mctx = self._init_context()
 
             # Process instruction  (fresh context)
-            if not self._process(inst, rctx): break
-            self._recorder.add_instruction(inst.getAddress(), inst.getOpcode(), inst.getDisassembly(), source)
+            if not process_instruction(inst, rctx): return False, mctx
+            self._recorder.add_instruction(inst.getAddress(), inst.getOpcode(), inst.getDisassembly(), code)
 
             # Identify accessed registers
             logger.debug("Regs:")
@@ -314,7 +279,7 @@ class GdbTracer:
                 reg_name = reg.getName()
                 if reg_name.lower() == "unknown": return
                 try:
-                    reg_value = self._get_register_value(reg_name)
+                    reg_value = GdbHelper.get_register_value(reg_name)
                     # Store register value on first access
                     if reg_name not in self._accessed_regs:
                         self._accessed_regs[reg_name] = reg_value
@@ -338,7 +303,7 @@ class GdbTracer:
                     process_register(op.getSegmentRegister())
 
             # Process instruction (registers concretized)
-            if not self._process(inst, mctx): break
+            if not process_instruction(inst, mctx): return False, mctx
 
             # Identify accessed memory
             logger.debug("Mems:")
@@ -349,26 +314,88 @@ class GdbTracer:
                     try:
                         # Store memory value on first access
                         if mem_addr+i not in self._accessed_mems:
-                            mem_value = self._get_memory_value(mem_addr+i, CPUSIZE.BYTE)
+                            mem_value = GdbHelper.get_memory_value(mem_addr+i, CPUSIZE.BYTE)
                             mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                             self._accessed_mems[mem_addr+i] = mem_value
                             self._recorder.add_concrete_memory(mem_addr+i, mem_value, is_entry=True)
                             logger.debug(f"\t0x{mem_addr+i:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
                     except Exception as exc:
                         logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:08x}: '{str(exc):s}'")
-            
-            # Step over instruction
-            gdb.execute("stepi")
+            return True, mctx
+
+
+        while True:
+            # Get next instruction
+            pc, opcode, code = GdbHelper.get_instruction()
+
+            # Stop condition
+            if not pc or pc in self._stop_addrs: break
+            inst = Instruction(pc, opcode)
+
+            # Execute potential hook functions
+            is_hooked = execute_hook_functions(inst)
+            if is_hooked: continue
+
+            # Record accessed registers and memory locations
+            success, ctx = record_reg_mem_accesses(inst, code)
+            if not success: break
+
+            # Handle ARM32 IT instructions
+            # NOTE: Hooking instructions within an ARM32 IT block is not supported
+            if inst.getType() == OPCODE.ARM32.IT:
+                # Parse condition switches from disassembly
+                rmatch = re.match(r"^i(t[te]{0,3})\s", inst.getDisassembly())
+
+                # Store instructions within IT block
+                addr     = pc
+                opcode   = inst.getOpcode()
+                it_block = {}
+                for condition in rmatch.group(1):
+                    addr, opcode, code = GdbHelper.get_instruction(addr + len(opcode))
+                    it_block[addr] = (condition, opcode, code, False)
+
+                # Record instructions within IT block
+                while True:
+                    # Step through instructions inside IT block
+                    gdb.execute("stepi")
+                    pc = GdbHelper.get_register_value("pc")
+                    for addr, (condition, opcode, code, recorded) in it_block.items():
+                        # Record non-executed instruction (without register and memory accesses)
+                        if not recorded and addr < pc:
+                            inst = Instruction(addr, opcode)
+                            if process_instruction(inst):
+                                opcode = inst.getOpcode()
+                                disas  = inst.getDisassembly()
+                            else:
+                                disas  = "unknown"
+                            if code: code += " "
+                            code = f"{code:s}// IT Block: Instruction not exectued"
+                            self._recorder.add_instruction(addr, opcode, disas, code)
+                            it_block[addr] = (condition, opcode, code, True)
+                        # Record executed instruction (with register and memory acccesses)
+                        elif not recorded and addr == pc:
+                            if code: code += " "
+                            code = f"{code:s}// IT Block: Instruction executed"
+                            record_reg_mem_accesses(Instruction(addr, opcode), code)
+                            it_block[addr] = (condition, opcode, code, True)
+                        else:
+                            break
+                    # Program counter left IT block
+                    if not pc in it_block:
+                        break
+            else:
+                # Step over instruction
+                gdb.execute("stepi")
 
         # Store accessed registers at leave
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
-            reg_value = self._get_register_value(reg_name)
+            reg_value = GdbHelper.get_register_value(reg_name)
             self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
 
         # Store accessed memory at leave
         for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
             mem_addr = int(mem_addr, base=16)
-            mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
+            mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
 
         self._recorder.add_address(pc, False)
@@ -392,7 +419,7 @@ class GdbTracer:
                     GdbHelper.set_register_value(reg_name, reg_value)
                 except:
                     continue
-            reg_value = self._get_register_value(reg_name)
+            reg_value = GdbHelper.get_register_value(reg_name)
             self._accessed_regs[reg_name] = reg_value
             self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
             logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
@@ -409,7 +436,7 @@ class GdbTracer:
                     GdbHelper.set_memory_value(mem_addr, mem_value)
                 except:
                     continue
-            mem_value = self._get_memory_value(mem_addr, CPUSIZE.BYTE)
+            mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
             mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
             self._accessed_mems[mem_addr] = mem_value
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)

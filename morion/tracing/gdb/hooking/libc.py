@@ -370,7 +370,7 @@ class strtol(base_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                endptr_ = GdbHelper.get_memory_value(self.endptr)
+                endptr_ = GdbHelper.get_memory_value(self.endptr, 4)
                 endptr__ = GdbHelper.get_memory_string(endptr_)
                 result   = GdbHelper.get_register_value("r0")
                 self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")

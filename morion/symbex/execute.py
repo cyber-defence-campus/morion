@@ -230,10 +230,10 @@ class Executor:
             return False
         return is_supported
         
-    def run(self, args: argparse.Namespace) -> None:
+    def run(self, args: argparse.Namespace = None) -> None:
         # Initialization
-        self.stepping = args.stepping
-        VulnerabilityAnalysis.disallow_user_inputs = args.disallow_user_inputs
+        self.stepping = False if args is None else args.stepping
+        VulnerabilityAnalysis.disallow_user_inputs = True if args is None else args.disallow_user_inputs
         VulnerabilityAnalysis.analysis_history = {}
         inside_hook = False
 
@@ -252,8 +252,8 @@ class Executor:
                 break
 
             # Validate trace synchronization
-            if pc != addr:
-                self._logger.error(f"Desynchronized trace: pc=0x{pc:08x}, addr=0x{addr:08x}")
+            if addr != pc:
+                self._logger.error(f"Trace desynchronized: CON.PC 0x{addr:08x} != 0x{pc:08x} SYM.PC")
                 break
 
             # Execute hook functions
