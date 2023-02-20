@@ -400,7 +400,7 @@ class GdbTracer:
 
         self._recorder.add_address(pc, False)
         self._stop_addrs.clear()
-        logger.info("... finished tracing.")
+        logger.info(f"... finished tracing (pc=0x{pc:08x}).")
         return True
 
     def load(self, trace_file: str) -> bool:

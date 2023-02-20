@@ -280,8 +280,8 @@ class Executor:
 
         # Validate stop address
         if pc != stop_addr:
-            self._logger.error(f"Not terminated at the stop address: pc=0x{pc:08x}")
-        self._logger.info(f"... finished symbolic execution.")
+            self._logger.error(f"Not terminated at a stop address: pc=0x{pc:08x}")
+        self._logger.info(f"... finished symbolic execution (pc=0x{pc:08x}).")
 
         # Symbolic state
         self._logger.info("Start analyzing symbolic state...")
