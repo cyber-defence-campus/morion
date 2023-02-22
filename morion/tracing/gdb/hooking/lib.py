@@ -6,9 +6,9 @@ from morion.tracing.gdb.trace import GdbHelper
 from typing                   import List, Tuple
 
 
-class base_no_return:
+class base_hook:
     """
-    Base class for simulations functions.
+    Base class for hooking instruction sequences.
     """
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
@@ -19,7 +19,7 @@ class base_no_return:
         self._target_addr_end = target_addr
         self._mode = mode
         self._logger = logger
-        self.synopsis = "base_no_return"
+        self.synopsis = "base_hook"
         return
 
     def _arm_assemble(self, code_addr: int, code_lines: List[str], is_thumb: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
@@ -127,9 +127,9 @@ class base_no_return:
         return []
 
 
-class base_return(base_no_return):
+class func_hook(base_hook):
     """
-    Base class for simulations functions that sets the return value.
+    Base class for hooking functions (sets return value).
     """
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:

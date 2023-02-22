@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 from morion.log                     import Logger
-from morion.tracing.gdb.hooking.lib import base_no_return
+from morion.tracing.gdb.hooking.lib import base_hook
 from morion.tracing.gdb.trace       import GdbHelper
 from typing                         import List, Tuple
 
 
-class free(base_no_return):
+class free(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -27,7 +27,7 @@ class free(base_no_return):
         return []
     
 
-class malloc(base_no_return):
+class malloc(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -63,7 +63,7 @@ class malloc(base_no_return):
         return []
     
 
-class memcmp(base_no_return):
+class memcmp(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -103,7 +103,7 @@ class memcmp(base_no_return):
         return []
 
 
-class memcpy(base_no_return):
+class memcpy(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -148,7 +148,7 @@ class memcpy(base_no_return):
         return []
 
 
-class printf(base_no_return):
+class printf(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -185,7 +185,7 @@ class printf(base_no_return):
         return []
 
 
-class putchar(base_no_return):
+class putchar(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -220,7 +220,7 @@ class putchar(base_no_return):
         return []
 
 
-class puts(base_no_return):
+class puts(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -257,7 +257,7 @@ class puts(base_no_return):
         return []
 
 
-class strcmp(base_no_return):
+class strcmp(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -299,7 +299,7 @@ class strcmp(base_no_return):
         return []
     
 
-class strncmp(base_no_return):
+class strncmp(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -343,7 +343,7 @@ class strncmp(base_no_return):
         return []
 
 
-class strlen(base_no_return):
+class strlen(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
@@ -381,7 +381,7 @@ class strlen(base_no_return):
         return []
 
 
-class strtol(base_no_return):
+class strtol(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
