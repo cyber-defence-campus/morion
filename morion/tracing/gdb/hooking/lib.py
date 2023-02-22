@@ -140,7 +140,7 @@ class func_hook(base_hook):
         self._target_addr_end = target_addr
         self._mode = mode
         self._logger = logger
-        self.synopsis = "base_return"
+        self.synopsis = "func_hook"
         return
     
     def on_leave(self, code: List[str] = []) -> List[Tuple[int, bytes, str, str]]:
