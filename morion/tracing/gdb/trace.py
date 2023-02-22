@@ -108,8 +108,8 @@ class GdbHelper:
             if addr is None:
                 addr = GdbHelper.get_register_value("pc")
             border = GdbHelper.get_byteorder()
-            opcode = GdbHelper.get_memory_value(addr, CPUSIZE.QWORD)
-            opcode = opcode.to_bytes(CPUSIZE.QWORD, byteorder=border)
+            opcode = GdbHelper.get_memory_value(addr, CPUSIZE.DWORD)
+            opcode = opcode.to_bytes(CPUSIZE.DWORD, byteorder=border)
         except Exception as e:
             logger.error(f"Failed to load opcodes at address 0x{addr:08x}: {str(e):s}")
             return None, None, None
@@ -352,34 +352,31 @@ class GdbTracer:
                 it_block = {}
                 for condition in rmatch.group(1):
                     addr, opcode, code = GdbHelper.get_instruction(addr + len(opcode))
-                    it_block[addr] = (condition, opcode, code, False)
+                    inst = Instruction(addr, opcode)
+                    process_instruction(inst)
+                    it_block[addr] = (condition, inst, code, False)
+                    opcode = inst.getOpcode()
 
                 # Record instructions within IT block
                 while True:
                     # Step through instructions inside IT block
                     gdb.execute("stepi")
                     pc = GdbHelper.get_register_value("pc")
-                    for addr, (condition, opcode, code, recorded) in it_block.items():
+                    for addr, (condition, inst, code, recorded) in it_block.items():
                         # Record non-executed instruction (without register and memory accesses)
                         if not recorded and addr < pc:
-                            inst = Instruction(addr, opcode)
-                            if process_instruction(inst):
-                                opcode = inst.getOpcode()
-                                disas  = inst.getDisassembly()
-                            else:
-                                disas  = "unknown"
+                            opcode = inst.getOpcode()
+                            disas  = inst.getDisassembly()
                             if code: code += " "
                             code = f"{code:s}// IT Block: Instruction not exectued"
                             self._recorder.add_instruction(addr, opcode, disas, code)
-                            it_block[addr] = (condition, opcode, code, True)
+                            it_block[addr] = (condition, inst, code, True)
                         # Record executed instruction (with register and memory acccesses)
                         elif not recorded and addr == pc:
                             if code: code += " "
                             code = f"{code:s}// IT Block: Instruction executed"
-                            record_reg_mem_accesses(Instruction(addr, opcode), code)
-                            it_block[addr] = (condition, opcode, code, True)
-                        else:
-                            break
+                            record_reg_mem_accesses(inst, code)
+                            it_block[addr] = (condition, inst, code, True)
                     # Program counter left IT block
                     if not pc in it_block:
                         break
