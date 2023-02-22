@@ -7,6 +7,59 @@ from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonCont
 import  re
 
 
+class memcmp(base_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "int memcmp(const void *s1, const void *s2, size_t n);"
+        return
+    
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                self.s1  = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self.s1_ = Helper.get_memory_string(ctx, self.s1)
+                self.s2  = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.s2_ = Helper.get_memory_string(ctx, self.s2)
+                self.n   = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                self._logger.debug(f"\t s1 = 0x{self.s1:08x}")
+                self._logger.debug(f"\t*s1 = '{self.s1_:s}'")
+                self._logger.debug(f"\t s2 = 0x{self.s2:08x}")
+                self._logger.debug(f"\t*s2 = '{self.s2_:s}'")
+                self._logger.debug(f"\t  n = {self.n:d}")
+                # Taint mode
+                if self._mode == "taint":
+                    # TODO: Implementation
+                    pass
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return
+    
+    def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                result = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._logger.debug(f"\tresult = {result:d}")
+                # Taint mode
+                if self._mode == "taint":
+                    # TODO: Implementation
+                    pass
+                # Model mode
+                elif self._mode == "model":
+                    # TODO: Implementation
+                    pass
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return
+    
+
 class memcpy(base_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:

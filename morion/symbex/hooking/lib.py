@@ -6,7 +6,7 @@ from triton     import ARCH, CPUSIZE, MemoryAccess, TritonContext
 
 class base_hook:
     """
-    Base class for simulations functions.
+    Base class for hooking instruction sequences.
     """
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
