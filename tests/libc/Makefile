@@ -1,6 +1,9 @@
 CC     = gcc
 CFLAGS = -Wall -g -marm -O0
 
+memcmp_SRC = src/memcmp/memcmp.c
+memcmp_TGT = bin/memcmp
+
 memcpy_SRC = src/memcpy/memcpy.c
 memcpy_TGT = bin/memcpy
 
@@ -14,7 +17,10 @@ strtoul_SRC = src/strtoul/strtoul.c
 strtoul_TGT = bin/strtoul
 
 .PHONY: all
-all: memcpy strlen strtol strtoul
+all: memcmp memcpy strlen strtol strtoul
+
+memcmp: $(memcmp_SRC)
+	$(CC) $(CFLAGS) -o $(memcmp_TGT) $(memcmp_SRC)
 
 memcpy: $(memcpy_SRC)
 	$(CC) $(CFLAGS) -o $(memcpy_TGT) $(memcpy_SRC)
@@ -30,4 +36,4 @@ strtoul: $(strtoul_SRC)
 
 .PHONY: clean
 clean:
-	rm -f $(memcpy_TGT) $(strlen_TGT) $(strtol_TGT) $(strtoul_TGT)
+	rm -f $(memcmp_TGT) $(memcpy_TGT) $(strlen_TGT) $(strtol_TGT) $(strtoul_TGT)
