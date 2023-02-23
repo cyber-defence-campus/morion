@@ -416,7 +416,8 @@ class GdbTracer:
                     reg_value = int(reg_value, base=16)
                     GdbHelper.set_register_value(reg_name, reg_value)
                 except Exception as e:
-                    logger.warning(f"Failed to set register {reg_name:s}: {str(e):s}")
+                    if not reg_value == "$$":
+                        logger.warning(f"Failed to set register {reg_name:s}: {str(e):s}")
             try:
                 reg_value = GdbHelper.get_register_value(reg_name)
                 self._accessed_regs[reg_name] = reg_value
@@ -439,7 +440,8 @@ class GdbTracer:
                     mem_value = int(mem_value, base=16)
                     GdbHelper.set_memory_value(mem_addr, mem_value)
                 except Exception as e:
-                    logger.warning(f"Failed to set memory at address 0x{mem_addr:08x}: {str(e):s}")
+                    if not mem_value == "$$":
+                        logger.warning(f"Failed to set memory at address 0x{mem_addr:08x}: {str(e):s}")
             try:
                 mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
                 mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
