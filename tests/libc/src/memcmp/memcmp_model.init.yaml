@@ -1,0 +1,26 @@
+hooks:
+  libc:
+    memcmp:
+    - {entry: '0x4006a4', leave: '0x4006a8', target: '0x0100', mode: 'model'}
+    printf:
+    - {entry: '0x4006cc', leave: '0x4006d0', target: '0x0200', mode: 'skip'}
+    - {entry: '0x4006e0', leave: '0x4006e4', target: '0x0300', mode: 'skip'}
+    - {entry: '0x400708', leave: '0x40070c', target: '0x0400', mode: 'skip'}
+    - {entry: '0x40071c', leave: '0x400720', target: '0x0500', mode: 'skip'}
+    - {entry: '0x400738', leave: '0x40073c', target: '0x0600', mode: 'skip'}
+    - {entry: '0x40074c', leave: '0x400750', target: '0x0700', mode: 'skip'}
+states:
+  entry:
+    regs:
+      'r0':       ['0x412190']    # s1
+      'r1':       ['0x4121a8']    # s2
+      'r2':       ['0x03']        # n
+    mems:
+      '0x412190': ['0x41']        # s1[0] = A
+      '0x412191': ['0x42']        # s1[1] = B
+      '0x412192': ['0x43']        # s1[2] = C
+      '0x412193': ['0x00']        # s1[3]
+      '0x4121a8': ['0x41']        # s2[0] = A
+      '0x4121a9': ['0x42']        # s2[1] = B
+      '0x4121aa': ['0x41', '$$']  # s2[2] = A
+      '0x4121ab': ['0x00']        # s2[3]

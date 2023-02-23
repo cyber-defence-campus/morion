@@ -19,15 +19,11 @@ class memcmp(base_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 self.s1  = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.s1_ = Helper.get_memory_string(ctx, self.s1)
                 self.s2  = ctx.getConcreteRegisterValue(ctx.registers.r1)
-                self.s2_ = Helper.get_memory_string(ctx, self.s2)
                 self.n   = ctx.getConcreteRegisterValue(ctx.registers.r2)
-                self._logger.debug(f"\t s1 = 0x{self.s1:08x}")
-                self._logger.debug(f"\t*s1 = '{self.s1_:s}'")
-                self._logger.debug(f"\t s2 = 0x{self.s2:08x}")
-                self._logger.debug(f"\t*s2 = '{self.s2_:s}'")
-                self._logger.debug(f"\t  n = {self.n:d}")
+                self._logger.debug(f"\ts1     = 0x{self.s1:08x}")
+                self._logger.debug(f"\ts2     = 0x{self.s2:08x}")
+                self._logger.debug(f"\t n     = {self.n:d}")
                 # Taint mode
                 if self._mode == "taint":
                     # TODO: Implementation
@@ -51,8 +47,54 @@ class memcmp(base_hook):
                     pass
                 # Model mode
                 elif self._mode == "model":
-                    # TODO: Implementation
-                    pass
+                    # AST context
+                    ast = ctx.getAstContext()
+
+                    # Subtraction index 0
+                    ast_s1_0  = ctx.getMemoryAst(MemoryAccess(self.s1, CPUSIZE.BYTE))
+                    ast_s1_0  = ast.zx(CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT, ast_s1_0)
+                    ast_s2_0  = ctx.getMemoryAst(MemoryAccess(self.s2, CPUSIZE.BYTE))
+                    ast_s2_0  = ast.zx(CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT, ast_s2_0)
+                    ast_sub_0 = ast.bvsub(ast_s1_0, ast_s2_0)
+
+                    # Summation indexes [1, n-1]
+                    ast_sum_n = ast.bv(0, CPUSIZE.DWORD_BIT)
+                    for i in range(1, self.n):
+                        # Subtraction
+                        ast_s1_i = ctx.getMemoryAst(MemoryAccess(self.s1 + i, CPUSIZE.BYTE))
+                        ast_s1_i = ast.zx(CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT, ast_s1_i)
+                        ast_s2_i = ctx.getMemoryAst(MemoryAccess(self.s2 + i, CPUSIZE.BYTE))
+                        ast_s2_i = ast.zx(CPUSIZE.DWORD_BIT-CPUSIZE.BYTE_BIT, ast_s2_i)
+                        ast_sub_i = ast.bvsub(ast_s1_i, ast_s2_i)
+                        # If-Then-Else
+                        ast_eq = [ast.equal(ast.bvtrue(), ast.bvtrue())]
+                        for k in range(0, i):
+                            ast_s1_k = ctx.getMemoryAst(MemoryAccess(self.s1 + k, CPUSIZE.BYTE))
+                            ast_s2_k = ctx.getMemoryAst(MemoryAccess(self.s2 + k, CPUSIZE.BYTE))
+                            ast_eq.append(ast.equal(ast_s1_k, ast_s2_k))
+                        ast_ite_i = ast.ite(
+                            ast.land(ast_eq),
+                            ast.bv(1, CPUSIZE.DWORD_BIT),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        )
+                        # Multiplication
+                        ast_mul_i = ast.bvmul(ast_sub_i, ast_ite_i)
+                        ast_sum_n = ast.bvadd(ast_sum_n, ast_mul_i)
+
+                    # Handle n == 0
+                    ast_memcmp = ast.ite(
+                        ast.equal(
+                            ast.bv(self.n, CPUSIZE.DWORD_BIT),
+                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                        ),
+                        ast.bv(0, CPUSIZE.DWORD_BIT),
+                        # Addition indexes [0, n-1]
+                        ast.bvadd(ast_sub_0, ast_sum_n)
+                    )
+
+                    # Assign symbolic result to return register
+                    exp_memcmp = ctx.newSymbolicExpression(ast_memcmp)
+                    ctx.assignSymbolicExpressionToRegister(exp_memcmp, ctx.registers.r0)
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -299,7 +341,7 @@ class strtol(base_hook):
                         else:
                             base = 10
 
-                    # ASTs or relevant ASCII characters
+                    # ASTs of relevant ASCII characters
                     ast = ctx.getAstContext()
                     ast_0 = ast.bv(ord("0"), CPUSIZE.BYTE_BIT)
                     ast_9 = ast.bv(ord("9"), CPUSIZE.BYTE_BIT)
