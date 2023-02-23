@@ -254,13 +254,13 @@ class GdbTracer:
             try:
                 ctx.disassembly(inst)
             except Exception as exc:
-                logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
+                logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():08x}: '{str(exc):s}'")
                 return False
             # Building semantics
             try:
                 supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
             except Exception as exc:
-                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():x}: '{str(exc):s}'")
+                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(exc):s}'")
                 return False
             return supported
 
@@ -409,35 +409,45 @@ class GdbTracer:
         self._recorder._trace["instructions"] = []
         # Set register values
         logger.debug("Regs:")
-        for reg_name, reg_values in self._recorder._trace["states"]["entry"]["regs"].items():
+        entry_regs = self._recorder._trace["states"]["entry"]["regs"].copy()
+        for reg_name, reg_values in entry_regs.items():
             for reg_value in reg_values:
                 try:
                     reg_value = int(reg_value, base=16)
                     GdbHelper.set_register_value(reg_name, reg_value)
-                except:
-                    continue
-            reg_value = GdbHelper.get_register_value(reg_name)
-            self._accessed_regs[reg_name] = reg_value
-            self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
-            logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
+                except Exception as e:
+                    logger.warning(f"Failed to set register {reg_name:s}: {str(e):s}")
+            try:
+                reg_value = GdbHelper.get_register_value(reg_name)
+                self._accessed_regs[reg_name] = reg_value
+                self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
+                logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
+            except Exception as e:
+                logger.warning(f"Failed to read register {reg_name:s}: {str(e):s}")
+
         # Set memory values
         logger.debug("Mems:")
-        for mem_addr, mem_values in self._recorder._trace["states"]["entry"]["mems"].items():
+        entry_mems = self._recorder._trace["states"]["entry"]["mems"].copy()
+        for mem_addr, mem_values in entry_mems.items():
             try:
                 mem_addr = int(mem_addr, base=16)
-            except:
+            except Exception as e:
+                logger.warning(f"Invalid memory address: {str(e):s}")
                 continue
             for mem_value in mem_values:
                 try:
                     mem_value = int(mem_value, base=16)
                     GdbHelper.set_memory_value(mem_addr, mem_value)
-                except:
-                    continue
-            mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
-            mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
-            self._accessed_mems[mem_addr] = mem_value
-            self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
-            logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
+                except Exception as e:
+                    logger.warning(f"Failed to set memory at address 0x{mem_addr:08x}: {str(e):s}")
+            try:
+                mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
+                mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
+                self._accessed_mems[mem_addr] = mem_value
+                self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
+                logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
+            except Exception as e:
+                logger.warning(f"Failed to read memory at addrss 0x{mem_addr:08x}: {str(e):s}")
                 
         # Set hooks
         logger.debug("Hooks:")
