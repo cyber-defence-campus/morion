@@ -24,7 +24,3 @@ class TestSymbex(unittest.TestCase):
     def tearDown(self):
         self.tf.close()
         print("\n")
-    
-    
-if __name__ == "__main__":
-    unittest.main()

@@ -26,8 +26,19 @@ class memcmp(base_hook):
                 self._logger.debug(f"\t n     = {self.n:d}")
                 # Taint mode
                 if self._mode == "taint":
-                    # TODO: Implementation
-                    pass
+                    self._taint = False
+                    if (ctx.isRegisterSymbolized(ctx.registers.r0) or
+                        ctx.isRegisterSymbolized(ctx.registers.r1) or
+                        ctx.isRegisterSymbolized(ctx.registers.r2)):
+                        self._taint = True
+                        return
+                    for i in range(self.n):
+                        mem_s1 = MemoryAccess(self.s1+i, CPUSIZE.BYTE)
+                        mem_s2 = MemoryAccess(self.s2+i, CPUSIZE.BYTE)
+                        if (ctx.isMemorySymbolized(mem_s1) or
+                            ctx.isMemorySymbolized(mem_s2)):
+                            self._taint = True
+                            return
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -43,8 +54,10 @@ class memcmp(base_hook):
                 self._logger.debug(f"\tresult = {result:d}")
                 # Taint mode
                 if self._mode == "taint":
-                    # TODO: Implementation
-                    pass
+                    if self._taint:
+                        ctx.concretizeRegister(ctx.registers.r0)
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcmp]")
+                        self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
                     # AST context
