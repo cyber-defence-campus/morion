@@ -6,7 +6,7 @@ from morion.tracing.gdb.trace import GdbHelper
 from typing                   import List, Tuple
 
 
-class base_hook:
+class inst_hook:
     """
     Base class for hooking instruction sequences.
     """
@@ -19,7 +19,7 @@ class base_hook:
         self._target_addr_end = target_addr
         self._mode = mode
         self._logger = logger
-        self.synopsis = "base_hook"
+        self.synopsis = "inst_hook"
         return
 
     def _arm_assemble(self, code_addr: int, code_lines: List[str], is_thumb: bool, comment: str = None) -> List[Tuple[int, bytes, str, str]]:
@@ -127,7 +127,7 @@ class base_hook:
         return []
 
 
-class func_hook(base_hook):
+class func_hook(inst_hook):
     """
     Base class for hooking functions (sets return value).
     """

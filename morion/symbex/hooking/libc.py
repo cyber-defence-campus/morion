@@ -2,12 +2,12 @@
 ## -*- coding: utf-8 -*-
 from    morion.log                import Logger
 from    morion.symbex.execute     import Helper
-from    morion.symbex.hooking.lib import base_hook
+from    morion.symbex.hooking.lib import inst_hook
 from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import  re
 
 
-class memcmp(base_hook):
+class memcmp(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)
@@ -115,7 +115,7 @@ class memcmp(base_hook):
         return
     
 
-class memcpy(base_hook):
+class memcpy(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)
@@ -186,7 +186,7 @@ class memcpy(base_hook):
         return
 
 
-class puts(base_hook):
+class puts(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)
@@ -208,7 +208,7 @@ class puts(base_hook):
         return
 
 
-class strlen(base_hook):
+class strlen(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)
@@ -274,7 +274,7 @@ class strlen(base_hook):
         return
 
 
-class strtol(base_hook):
+class strtol(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)

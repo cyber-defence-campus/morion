@@ -4,7 +4,7 @@ from morion.log import Logger
 from triton     import ARCH, CPUSIZE, MemoryAccess, TritonContext
 
 
-class base_hook:
+class inst_hook:
     """
     Base class for hooking instruction sequences.
     """
@@ -15,7 +15,7 @@ class base_hook:
         self._leave_addr = leave_addr
         self._mode = mode
         self._logger = logger
-        self.synopsis = "base_hook"
+        self.synopsis = "inst_hook"
         return
 
     def on_entry(self, ctx: TritonContext) -> None:
@@ -56,7 +56,7 @@ class base_hook:
         return
 
 # TODO: Use this to implement taint mode
-# class generic_hook(base_hook):
+# class generic_hook(inst_hook):
 #     """
 #     Assign new symbolic variable(s) to function result(s), in case any of the function arguments is
 #     based on a symbolic variable.
