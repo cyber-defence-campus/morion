@@ -3,11 +3,11 @@
 import argparse
 import importlib
 import inspect
-import IPython
 import os
 import pkgutil
 import string
 import sys
+from   morion.interact                      import Shell
 from   morion.log                           import Logger
 from   morion.map                           import AddressMapper
 from   morion.record                        import Recorder
@@ -273,7 +273,7 @@ class Executor:
             # Symbolic execution
             if not self._step(pc, opcode, disassembly, comment): break
             if self.stepping:
-                IPython.embed(header="Stepping... (disable by 'self.stepping = False')")
+                Shell.interact('Use "se.stepping = False" to disable stepping.', se=self)
 
             # Upgrade program counter
             pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)

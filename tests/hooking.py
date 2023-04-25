@@ -31,5 +31,4 @@ while pc in function:
     inst = Instruction(pc, function[pc])
     ctx.processing(inst)
     print(inst)
-    import IPython; IPython.embed()
     pc = ctx.getConcreteRegisterValue(ctx.registers.pc)
