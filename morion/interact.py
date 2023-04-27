@@ -5,12 +5,12 @@ class Shell:
         import readline
         import code
 
-        def __quit():
+        def __raise_sys_exit():
             raise SystemExit
 
         vars  = locals().copy()
         vars.update(kwargs)
-        vars.update({'quit': __quit, 'exit': __quit})
+        vars.update({'quit': __raise_sys_exit, 'exit': __raise_sys_exit})
         vars.update(globals())
 
         entry_msg = f"""
