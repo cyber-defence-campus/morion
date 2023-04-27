@@ -7,12 +7,11 @@ from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
-class PatchAnalyzer(Executor):
+class PathAnalyzer(Executor):
 
-    def run(self, args: argparse.Namespace) -> None:
+    def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
-        # TODO: Changed from False to True. Is this still correct?
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
         # Set post-processing functions
         self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_paths)
@@ -58,13 +57,13 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="Run without requesting the user for inputs")
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
 
     # Symbolic Execution
-    se = PatchAnalyzer(Logger(args.log_level))
-    se.load(args.trace_file)
+    se = PathAnalyzer(Logger(args["log_level"]))
+    se.load(args["trace_file"])
     se.run(args)
-    se.store(args.trace_file)
+    se.store(args["trace_file"])
     return
 
 if __name__ == "__main__":

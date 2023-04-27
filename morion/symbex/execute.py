@@ -230,10 +230,10 @@ class Executor:
             return False
         return is_supported
         
-    def run(self, args: argparse.Namespace = None) -> None:
+    def run(self, args: dict = {}) -> None:
         # Initialization
-        self.stepping = False if args is None else args.stepping
-        VulnerabilityAnalysis.disallow_user_inputs = True if args is None else args.disallow_user_inputs
+        self.stepping = args.get("stepping", False)
+        VulnerabilityAnalysis.disallow_user_inputs = args.get("disallow_user_inputs", True)
         VulnerabilityAnalysis.analysis_history = {}
         inside_hook = False
 
@@ -360,13 +360,13 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="Run without requesting the user for inputs")
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
 
     # Symbolic execution
-    se = Executor(Logger(args.log_level))
-    se.load(args.trace_file)
+    se = Executor(Logger(args["log_level"]))
+    se.load(args["trace_file"])
     se.run(args)
-    se.store(args.trace_file)
+    se.store(args["trace_file"])
     return
 
 if __name__ == "__main__":

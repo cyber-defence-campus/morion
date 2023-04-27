@@ -50,7 +50,7 @@ class BackwardSlicer(Executor):
             return False
         return True
 
-    def run(self, args: argparse.Namespace) -> None:
+    def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, False)
@@ -59,10 +59,12 @@ class BackwardSlicer(Executor):
         # Run symbolic execution
         super().run(args)
         # Calculate backward slice
-        if args.reg_name is not None:
-            self._backward_slice_register(args.reg_name)
-        if args.mem_addr is not None:
-            self._backward_slice_memory(args.mem_addr)
+        reg_name = args.get("reg_name")
+        if reg_name:
+            self._backward_slice_register(reg_name)
+        mem_addr = args.get("mem_addr")
+        if mem_addr:
+            self._backward_slice_memory(mem_addr)
         # Remove post-processing functions
         self._post_processing_functions.pop()
         # Restore symbolic execution mode
@@ -95,26 +97,29 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="Run without requesting the user for inputs")
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
 
-    if (args.reg_name is None) == (args.mem_addr is None):
+    reg_name = args.get("reg_name")
+    mem_addr = args.get("mem_addr")
+
+    if (reg_name is None) == (mem_addr is None):
         print("error: invalid slicing source\n")
         parser.print_help()
         return
-
-    if args.mem_addr is not None:
+    
+    if mem_addr is not None:
         try:
-            args.mem_addr = int(args.mem_addr, base=0)
+            args["mem_addr"] = int(mem_addr, base=0)
         except:
             print("error: invalid 'mem_addr'\n")
             parser.print_help()
             return
 
     # Symbolic Execution
-    se = BackwardSlicer(Logger(args.log_level))
-    se.load(args.trace_file)
+    se = BackwardSlicer(Logger(args["log_level"]))
+    se.load(args["trace_file"])
     se.run(args)
-    se.store(args.trace_file)
+    se.store(args["trace_file"])
     return
 
 if __name__ == "__main__":

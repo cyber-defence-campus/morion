@@ -9,7 +9,7 @@ from   triton                               import MODE
 
 class ControlHijacker(Executor):
 
-    def run(self, args: argparse.Namespace) -> None:
+    def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
@@ -46,13 +46,13 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="Run without requesting the user for inputs")
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
 
     # Symbolic Execution
-    se = ControlHijacker(Logger(args.log_level))
-    se.load(args.trace_file)
+    se = ControlHijacker(Logger(args["log_level"]))
+    se.load(args["trace_file"])
     se.run(args)
-    se.store(args.trace_file)
+    se.store(args["trace_file"])
     return
 
 if __name__ == "__main__":
