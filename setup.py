@@ -2,10 +2,10 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'morion',
-    version = '0.0.8',
+    version = '0.0.9',
     packages = find_packages(include = ['morion', 'morion.*']),
     install_requires = [
-        'termcolor==1.1.0',
+        'termcolor==2.3.0',
         'keystone-engine==0.9.2',
         'PyYAML==6.0'
     ],
