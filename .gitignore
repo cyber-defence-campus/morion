@@ -4,6 +4,7 @@ __pycache__/
 # Distribution / Packaging
 build/
 *.egg-info/
+.gradle
 
 # Environments
 venvs/
