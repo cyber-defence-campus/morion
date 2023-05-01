@@ -273,7 +273,7 @@ class Executor:
             # Symbolic execution
             if not self._step(pc, opcode, disassembly, comment): break
             if self.stepping:
-                Shell.interact('Use "se.stepping = False" to disable stepping.', se=self)
+                Shell.interact("Use 'se.stepping = False' to disable stepping.", se=self)
 
             # Upgrade program counter
             pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)

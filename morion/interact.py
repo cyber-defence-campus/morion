@@ -1,42 +1,54 @@
+#!/usr/bin/env python3
+## -*- coding: utf-8 -*-
+
 class Shell:
 
     @staticmethod
     def interact(entry_msg: str = '', **kwargs) -> None:
-        import readline
         import code
+        import readline
+        import sys
 
-        def __raise_sys_exit():
-            raise SystemExit
-
-        vars  = locals().copy()
-        vars.update(kwargs)
-        vars.update({'quit': __raise_sys_exit, 'exit': __raise_sys_exit})
-        vars.update(globals())
-
-        entry_msg = f"""
+        # stdin or stdout are not connected to the TTY
+        if not sys.stdin.isatty() or not sys.stdout.isatty():
+            print("[!] Morion shell is not supported.")
+            return
+        
+        # Show banner
+        entry_msg = [
+            f"""
                       _                   _          _ _ 
  _ __ ___   ___  _ __(_) ___  _ __    ___| |__   ___| | |
 | '_ ` _ \ / _ \| '__| |/ _ \| '_ \  / __| '_ \ / _ \ | |
 | | | | | | (_) | |  | | (_) | | | | \__ \ | | |  __/ | |
 |_| |_| |_|\___/|_|  |_|\___/|_| |_| |___/_| |_|\___|_|_|
+            """,
+            entry_msg,
+            "",
+            "Available objects:"
+        ] + [
+            "- " + key for key in kwargs.keys()
+        ] + [
+            "",
+            "Type quit(), exit() or ctrl-d to leave the interpreter."
+        ]
+        entry_msg = "\n".join(entry_msg)
+        print(entry_msg)
 
-{entry_msg:s}
-
-Available objects:"""
-        for key in kwargs.keys():
-            entry_msg = f"""
-{entry_msg:s}
-- {key:s}"""
-        entry_msg = f"""
-{entry_msg:s}
-
-Type quit() or ctrl-d to leave the interpreter.
-"""
-
-        shell = code.InteractiveConsole(vars)
+        # stdin and stdout are connected to the TTY
+        ns = kwargs
         try:
-            shell.interact(entry_msg)
-        except SystemExit:
-            pass
-        
+            import IPython
+        except ImportError:
+            # Use regular Python interpreter
+            def __raise_sys_exit(): raise SystemExit
+            try:
+                ns.update({'quit': __raise_sys_exit, 'exit': __raise_sys_exit})
+                code.InteractiveConsole(ns).interact('', '')
+            except SystemExit:
+                pass
+        else:
+            # Use IPython interpereter
+            IPython.start_ipython(argv=[], display_banner=False, user_ns=ns)
+
         return

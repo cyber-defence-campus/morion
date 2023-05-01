@@ -7,7 +7,8 @@ setup(
     install_requires = [
         'termcolor==2.3.0',
         'keystone-engine==0.9.2',
-        'PyYAML==6.0'
+        'PyYAML==6.0',
+        'ipython==7.34.0'
     ],
     entry_points = {
         'console_scripts': [
