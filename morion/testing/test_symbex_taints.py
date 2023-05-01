@@ -7,7 +7,7 @@ from   triton import CPUSIZE, MemoryAccess
 
 class TestTaintLibcMemcmp(TestSymbex):
 
-    def test_no_taint(self):
+    def test_no_taint(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -60,7 +60,9 @@ class TestTaintLibcMemcmp(TestSymbex):
         # Validate results
         self.assertFalse(self.se.ctx.isRegisterSymbolized(self.se.ctx.registers.r0))
 
-    def test_addr(self):
+        return
+
+    def test_addr(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -113,7 +115,9 @@ class TestTaintLibcMemcmp(TestSymbex):
         # Validate results
         self.assertTrue(self.se.ctx.isRegisterSymbolized(self.se.ctx.registers.r0))
 
-    def test_value(self):
+        return
+
+    def test_value(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -165,6 +169,8 @@ class TestTaintLibcMemcmp(TestSymbex):
 
         # Validate results
         self.assertTrue(self.se.ctx.isRegisterSymbolized(self.se.ctx.registers.r0))
+
+        return
 
     
 if __name__ == "__main__":

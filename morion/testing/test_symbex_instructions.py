@@ -6,7 +6,7 @@ from   morion.testing.test_symbex import TestSymbex
 
 class TestA32instIT(TestSymbex):
 
-    def test_ite(self):
+    def test_ite(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': True},
@@ -56,9 +56,11 @@ class TestA32instIT(TestSymbex):
         model = self.se.ctx.getModel(r2_ast == 0x03)
         self.assertTrue(model[0].getValue() != model[1].getValue())
         self.assertFalse(self.se.ctx.isSat(r3_ast != 0x04))
+        
+        return
 
 
-    def test_itete(self):
+    def test_itete(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': True},
@@ -115,6 +117,8 @@ class TestA32instIT(TestSymbex):
         model = self.se.ctx.getModel(r3_ast == 0x04)
         self.assertTrue(model[0].getValue != model[1].getValue())
         self.assertFalse(self.se.ctx.isSat(r4_ast != 0x06))
+
+        return
 
     
 if __name__ == "__main__":

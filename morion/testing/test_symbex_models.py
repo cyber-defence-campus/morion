@@ -7,7 +7,7 @@ from   triton                     import CPUSIZE, MemoryAccess
 
 class TestModelLibcMemcmp(TestSymbex):
 
-    def test_n0(self):
+    def test_n0(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -68,7 +68,9 @@ class TestModelLibcMemcmp(TestSymbex):
         # NOTE: Model does not support symbolic n's
         self.assertFalse(self.se.ctx.isSat(r0_ast != 0))
 
-    def test_n3(self):
+        return
+
+    def test_n3(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -144,7 +146,9 @@ class TestModelLibcMemcmp(TestSymbex):
         self.assertEqual(mem_add, '0x4121aa', '0x4121aa == 0x42 B (mem_add)')
         self.assertEqual(mem_val, 0x42,       '0x4121aa == 0x42 B (mem_val)')
 
-    def test_n15(self):
+        return
+
+    def test_n15(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({
             'info': {'arch': 'armv7', 'thumb': False},
@@ -244,6 +248,8 @@ class TestModelLibcMemcmp(TestSymbex):
         mem_1_val = model[1][1].getValue()
         self.assertEqual(mem_1_add, '0x4121b3', '0x4121b3 == 0x40 @ (mem_add)')
         self.assertEqual(mem_1_val, 0x40,       '0x4121b3 == 0x40 @ (mem_val)')
+
+        return
 
     
 if __name__ == "__main__":
