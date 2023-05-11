@@ -20,6 +20,9 @@ def main() -> None:
     parser.add_argument('-m', '--multiarch',
                         action='store_true',
                         help='use the multi-architecture version of GDB')
+    parser.add_argument('-w', '--tmux_window_name',
+                        default='morion-pwndbg',
+                        help='tmux window name')
     parser.add_argument('-s', '--tmux_session_name',
                         default='morion',
                         help='tmux session name')
@@ -29,8 +32,8 @@ def main() -> None:
     args = vars(parser.parse_args())
 
     # Parameters
-    session_name = args['tmux_session_name']
-    window_name  = "morion-pwndbg"
+    session_name = args.get('tmux_session_name')
+    window_name  = args.get('tmux_window_name')
     gdb = "gdb-multiarch" if "multiarch" in args else "gdb"
 
     # Terminal size
@@ -47,6 +50,7 @@ def main() -> None:
         'tmux', 'new-session',                  # New tmux session
         '-d',                                   # Detach session from current terminal
         '-P', '-F', '#{pane_id}:#{pane_tty}',   # Print information
+        '-n', window_name,                      # Window name
         '-s', session_name,                     # Session name
         '-x', str(terminal_size.columns),       # Window width
         '-y', str(terminal_size.lines),         # Window height
@@ -110,19 +114,20 @@ def main() -> None:
     pane_morion = p.stdout.strip().split(':')
 
     # Configure panes
-    cmd = f'''
+    layout_pwndbg_contexts = f'''
 python
 from pwndbg.commands.context import contextoutput
 contextoutput("stack", "{pane_stack[1]:s}", True)
 contextoutput("backtrace", "{pane_backtrace[1]:s}", True)
 contextoutput("disasm", "{pane_disasm[1]:s}", True)
 contextoutput("regs", "{pane_regs[1]:s}", True)
+contextoutput("legend", "{pane_stack[1]:s}", True)
 end
     '''
     p = run_cmd([
         'tmux', 'send',
-        '-t', session_name,
-        cmd, 'ENTER'
+        '-t', f'{session_name}.{pane_pwndbg[0]:s}',
+        layout_pwndbg_contexts, 'ENTER'
     ])
     
     p = run_cmd([
@@ -135,7 +140,7 @@ end
     for gdb_cmd_file in args.get('gdb_cmd_files', []):
         p = run_cmd([
             'tmux', 'send',
-            '-t', session_name,
+            '-t', f'{session_name}.{pane_pwndbg[0]:s}',
             f'source {gdb_cmd_file:s}', 'ENTER'
         ])
 
