@@ -53,10 +53,10 @@ def main() -> None:
                         help="log level")
     parser.add_argument("--stepping",
                         action="store_true",
-                        help="Open a debug shell after each instruction")
+                        help="open a debug shell after each instruction")
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
-                        help="Run without requesting the user for inputs")
+                        help="run without requesting the user for inputs")
     args = vars(parser.parse_args())
 
     # Symbolic Execution
