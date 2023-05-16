@@ -32,9 +32,10 @@ def main() -> None:
     args = vars(parser.parse_args())
 
     # Parameters
-    session_name = args.get('tmux_session_name')
-    window_name  = args.get('tmux_window_name')
+    session_name = args['tmux_session_name']
+    window_name  = args['tmux_window_name']
     gdb = "gdb-multiarch" if "multiarch" in args else "gdb"
+    gdb_cmd_files = [] if args['gdb_cmd_files'] is None else args['gdb_cmd_files']
 
     # Terminal size
     terminal_size = os.get_terminal_size()
@@ -137,7 +138,7 @@ end
     ])
 
     # Run GDB command files
-    for gdb_cmd_file in args.get('gdb_cmd_files', []):
+    for gdb_cmd_file in gdb_cmd_files:
         p = run_cmd([
             'tmux', 'send',
             '-t', f'{session_name}.{pane_pwndbg[0]:s}',
