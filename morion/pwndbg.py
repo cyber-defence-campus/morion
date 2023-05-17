@@ -17,6 +17,8 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('pwndbg_gdbinit_file',
+                        help='pwndbg\'s gdbinit.py file')
     parser.add_argument('-m', '--multiarch',
                         action='store_true',
                         help='use the multi-architecture version of GDB')
@@ -116,6 +118,7 @@ def main() -> None:
 
     # Configure panes
     layout_pwndbg_contexts = f'''
+source {args['pwndbg_gdbinit_file']:s}
 python
 from pwndbg.commands.context import contextoutput
 contextoutput("stack", "{pane_stack[1]:s}", True)
