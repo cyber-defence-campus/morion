@@ -17,11 +17,11 @@ def main() -> None:
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('pwndbg_gdbinit_file',
-                        help='pwndbg\'s gdbinit.py file')
     parser.add_argument('-m', '--multiarch',
                         action='store_true',
                         help='use the multi-architecture version of GDB')
+    parser.add_argument('-g', 'pwndbg_gdbinit_file',
+                        help='pwndbg\'s gdbinit.py file to be sourced in GDB')
     parser.add_argument('-w', '--tmux_window_name',
                         default='morion-pwndbg',
                         help='tmux window name')
@@ -43,7 +43,7 @@ def main() -> None:
     terminal_size = os.get_terminal_size()
 
     # Kill a potential previous tmux session
-    p = run_cmd([
+    run_cmd([
         'tmux', 'kill-session',             # Kill tmux session
         '-t', session_name                  # Session name
     ])
@@ -116,9 +116,16 @@ def main() -> None:
     ])
     pane_morion = p.stdout.strip().split(':')
 
+    # Source pwndbg
+    if args['pwndbg_gdbinit_file']:
+        run_cmd([
+            'tmux', 'send',
+            '-t', f'{session_name}.{pane_pwndbg[0]:s}',
+            f'source {args["pwndbg_gdbinit_file"]:s}', 'ENTER'
+        ])
+
     # Configure panes
     layout_pwndbg_contexts = f'''
-source {args['pwndbg_gdbinit_file']:s}
 python
 from pwndbg.commands.context import contextoutput
 contextoutput("stack", "{pane_stack[1]:s}", True)
@@ -128,13 +135,13 @@ contextoutput("regs", "{pane_regs[1]:s}", True)
 contextoutput("legend", "{pane_stack[1]:s}", True)
 end
     '''
-    p = run_cmd([
+    run_cmd([
         'tmux', 'send',
         '-t', f'{session_name}.{pane_pwndbg[0]:s}',
         layout_pwndbg_contexts, 'ENTER'
     ])
     
-    p = run_cmd([
+    run_cmd([
         'tmux', 'send',
         '-t', f'{session_name:s}.{pane_morion[0]:s}',
         'morion -h', 'ENTER'
@@ -142,14 +149,14 @@ end
 
     # Run GDB command files
     for gdb_cmd_file in gdb_cmd_files:
-        p = run_cmd([
+        run_cmd([
             'tmux', 'send',
             '-t', f'{session_name}.{pane_pwndbg[0]:s}',
             f'source {gdb_cmd_file:s}', 'ENTER'
         ])
 
     # Attach tmux session
-    p = run_cmd([
+    run_cmd([
         'tmux', 'attach',
         '-t', session_name
     ])
