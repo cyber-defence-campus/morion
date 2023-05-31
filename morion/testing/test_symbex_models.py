@@ -5,6 +5,105 @@ from   morion.testing.test_symbex import TestSymbex
 from   triton                     import CPUSIZE, MemoryAccess
 
 
+class TestModelLibcFgets(TestSymbex):
+
+    def test_s(self) -> None:
+        # Init trace file
+        self._write_tmp_trace_file({
+            'info': {'arch': 'armv7', 'thumb': False},
+            'hooks': {
+                'libc': {
+                    'fgets': [{
+                        'entry' : '0x00cfe0',
+                        'leave' : '0x00cfe4',
+                        'target': '0x001000',
+                        'mode'  : 'model'
+                    }]
+                }
+            },
+            'states': {
+                'entry': {
+                    'addr': '0x00cfe0',
+                    'regs': {
+                        'r0': ['0xbeffc114'],   # s
+                        'r1': ['4'],            # n
+                        'r2': ['0x1']           # stream
+                    },
+                    'mems': {
+                        '0xbeffc113': ['0x01'],
+                        '0xbeffc114': ['0x02'], # s[0] = A
+                        '0xbeffc115': ['0x03'], # s[1] = B
+                        '0xbeffc116': ['0x04'], # s[3] = NULL
+                        '0xbeffc117': ['0x05'],
+                        '0xbeffc118': ['0x06']
+                    }
+                },
+                'leave': {
+                    'addr': '0x00cfe8'
+                }
+            },
+            'instructions': [
+                ['0x00cfe0', '06 d0 ff ea', 'b #-0xbfe0',       '// Hook: libc:fgets (on=entry, mode=model)'],
+                ['0x001000', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001014', '15 01 0c e3', 'mov  r0, #0xc115', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001028', '16 01 0c e3', 'mov  r0, #0xc116', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001030', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x00103c', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x001044', 'e6 2f 00 ea', 'b #0xbfa0',        '// Hook: libc:fgets (on=leave, mode=model)'],
+                ['0x00cfe4', '00 f0 20 e3', 'nop',              '']
+            ]
+        })
+
+        # Run symbolic execution
+        self.se.load(self.tf.name)
+        self.se.run()
+
+        # Validate results
+        mem_0_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc113, CPUSIZE.BYTE))
+        mem_0_val = self.se.ctx.evaluateAstViaSolver(mem_0_ast)
+        mem_1_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc114, CPUSIZE.BYTE))
+        mem_1_val = self.se.ctx.evaluateAstViaSolver(mem_1_ast)
+        mem_2_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc115, CPUSIZE.BYTE))
+        mem_2_val = self.se.ctx.evaluateAstViaSolver(mem_2_ast)
+        mem_3_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc116, CPUSIZE.BYTE))
+        mem_3_val = self.se.ctx.evaluateAstViaSolver(mem_3_ast)
+        mem_4_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc117, CPUSIZE.BYTE))
+        mem_4_val = self.se.ctx.evaluateAstViaSolver(mem_4_ast)
+        mem_5_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc118, CPUSIZE.BYTE))
+        mem_5_val = self.se.ctx.evaluateAstViaSolver(mem_5_ast)
+
+        self.assertTrue(mem_0_val == 0x01, '0xbeffc113 == 0x01')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_0_ast != 0x01)), '0xbeffc113 != 0x01')
+
+        self.assertTrue(mem_1_val == 0x41, '0xbeffc114 == 0x41')
+        self.assertTrue(bool(self.se.ctx.getModel(mem_1_ast != 0x41)), '0xbeffc114 != 0x41')
+
+        self.assertTrue(mem_2_val == 0x42, '0xbeffc115 == 0x42')
+        self.assertTrue(bool(self.se.ctx.getModel(mem_2_ast != 0x42)), '0xbeffc115 != 0x42')
+
+        self.assertTrue(mem_3_val == 0x00, '0xbeffc116 == 0x00')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_3_ast != 0x00)), '0xbeffc116 != 0x00')
+
+        self.assertTrue(mem_4_val == 0x05, '0xbeffc117 == 0x05')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_4_ast != 0x05)), '0xbeffc117 != 0x05')
+
+        self.assertTrue(mem_5_val == 0x06, '0xbeffc118 == 0x06')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_5_ast != 0x06)), '0xbeffc118 != 0x06')
+
+        return
+
 class TestModelLibcMemcmp(TestSymbex):
 
     def test_n0(self) -> None:

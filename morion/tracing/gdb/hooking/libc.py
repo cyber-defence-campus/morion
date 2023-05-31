@@ -6,6 +6,56 @@ from morion.tracing.gdb.trace       import GdbHelper
 from typing                         import List, Tuple
 
 
+class fgets(inst_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "char *fgets(char *restrict s, int n, FILE *restrict stream);"
+        return
+    
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                self.s = GdbHelper.get_register_value("r0")
+                self.n = GdbHelper.get_register_value("r1")
+                self.stream = GdbHelper.get_register_value("r2")
+                self._logger.debug(f"\t s      = 0x{self.s:08x}")
+                self._logger.debug(f"\t n      = {self.n:d}")
+                self._logger.debug(f"\t stream = 0x{self.stream:08x}")
+                return super().on_entry()
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                s = GdbHelper.get_register_value("r0")
+                s_ = GdbHelper.get_memory_string(s)
+                self._logger.debug(f"\t s = 0x{s:08x}")
+                self._logger.debug(f"\t*s = '{s_:s}'")
+                # Move s[i]
+                code_cpy = []
+                for i in range(len(s_)):
+                    mem_val = GdbHelper.get_memory_value(s+i, 1)
+                    code_cpy.extend(self._arm_mov_to_mem(s+i, mem_val, 1))
+                code_cpy.extend(self._arm_mov_to_mem(s+len(s_), 0x00, 1))
+                # Move result to return register r0
+                code_result = self._arm_mov_to_reg("r0", s)
+                return super().on_leave(code_cpy + code_result)
+                # # Move result to return register r0
+                # code = self._arm_mov_to_reg("r0", s)
+                # return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
 class free(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
@@ -138,7 +188,7 @@ class memcpy(inst_hook):
                 code_cpy = []
                 for i in range(self.n):
                     mem_val = GdbHelper.get_memory_value(self.src+i, 1)
-                    code_cpy.extend(self._arm_mov_to_mem(self.dest+i, mem_val))
+                    code_cpy.extend(self._arm_mov_to_mem(self.dest+i, mem_val, 1))
                 # Move result to return register r0
                 code_result = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code_cpy + code_result)

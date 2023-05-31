@@ -7,6 +7,62 @@ from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonCont
 import  re
 
 
+class fgets(inst_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "char *fgets(char *restrict s, int n, FILE *restrict stream);"
+        return
+
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self.n = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.stream = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                self._logger.debug(f"\t s = 0x{self.s:08x}")
+                self._logger.debug(f"\t n = {self.n:d}")
+                self._logger.debug(f"\t stream = 0x{self.stream:08x}")
+                # TODO: Taint mode
+                if self._mode == "taint":
+                    pass
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+    def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                s = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                s_ = Helper.get_memory_string(ctx, s)
+                self._logger.debug(f"\t s = 0x{s:08x}")
+                self._logger.debug(f"\t*s = '{s_:s}'")
+                # TODO: Taint mode
+                if self._mode == "taint":
+                    pass
+                # Model mode
+                elif self._mode == "model":
+                    cut = len(s_) > 3
+                    for i in range(len(s_)):
+                        mem = MemoryAccess(s+i, CPUSIZE.BYTE)
+                        ctx.symbolizeMemory(mem, f"0x{s+i:x}")
+                        if not cut or i == 0:
+                            self._logger.debug(f"\t0x{s+i:08x}=$$")
+                        elif i == len(s_)-1:
+                            self._logger.debug(f"\t...")
+                            self._logger.debug(f"\t0x{s+i:08x}=$$")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+
 class memcmp(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
