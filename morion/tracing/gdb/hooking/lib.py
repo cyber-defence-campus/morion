@@ -45,13 +45,17 @@ class inst_hook:
             f"movt {reg_name:s}, #0x{value_t:x}"
         ]
 
-    def _arm_mov_to_mem(self, mem_addr: int, value: int) -> List[str]:
+    def _arm_mov_to_mem(self, mem_addr: int, value: int, size: int = 4) -> List[str]:
         code_r0 = self._arm_mov_to_reg("r0", mem_addr)
         code_r1 = self._arm_mov_to_reg("r1", value)
-        return code_r0 + code_r1 + [
-            f"str r1, [r0]"
-        ]
-
+        if size == 1:
+            code_str = ["strb r1, [r0]"]
+        elif size == 2:
+            code_str = ["strh r1, [r0]"]
+        else:
+            code_str = ["str r1, [r0]"]
+        return code_r0 + code_r1 + code_str
+    
     def on_entry(self, code: List[str] = []) -> List[Tuple[int, bytes, str, str]]:
         """On entry hook during concrete execution.
 
