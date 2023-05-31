@@ -93,9 +93,9 @@ class GdbHelper:
         # Handle NULL
         if not mem_addr: return ''
         # Examine string at address `mem_addr`
-        memory_string = gdb.execute(f"x/s {mem_addr:d}", to_string=True)
+        memory_string = gdb.execute(f'printf "%s", {mem_addr:d}', to_string=True)
         # Parse string
-        pattern = r"^0x[0-9a-f]+[^:]*:[^\"]*\"([^\"]*)\".*$"
+        pattern = r"^([^\n]*)\n$"
         match = re.match(pattern, memory_string)
         if match is not None:
             return match.group(1)
