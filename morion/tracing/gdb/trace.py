@@ -95,7 +95,7 @@ class GdbHelper:
         # Examine string at address `mem_addr`
         memory_string = gdb.execute(f'printf "%s", {mem_addr:d}', to_string=True)
         # Parse string
-        pattern = r"^([^\n]*)\n$"
+        pattern = r"^([^\n]*)$"
         match = re.match(pattern, memory_string)
         if match is not None:
             return match.group(1)
