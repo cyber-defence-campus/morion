@@ -300,13 +300,11 @@ class Executor:
             reg_value = self.ctx.getConcreteRegisterValue(reg)
             byte_mask = self._is_register_symbolic(reg_name)
             reg_mask = "".join("$$" if b else "XX" for b in byte_mask)
-            # Log symbolic registers
-            if "$$" in reg_mask:
-                self._logger.info(f"\t{reg_name:s}={reg_mask:s}", color="magenta")
-            # Record register values
+            is_symbolic = "$$" in reg_mask
             self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
-            if "$$" in reg_mask:
+            if is_symbolic:
                 self._recorder.add_symbolic_register(reg_name, is_entry=False)
+                self._logger.info(f"\t{reg_name:s}={reg_mask:s}", color="magenta")
         self._logger.info("Symbolic Mems:", color="magenta")
         mem_addrs = set()
         # Process symbolic memory addresses
@@ -319,19 +317,38 @@ class Executor:
                     mem_addr = int(mem_addr, base=0)
             except:
                 continue
-            mem_addrs.add(mem_addr)
+            mem_addrs.add(mem_addr)        
         # Process memory addresses
+        sym_mem_addrs = []
         for mem_addr in sorted(mem_addrs):
             mem_value = self.ctx.getConcreteMemoryValue(mem_addr)
             byte_mask = self._is_memory_symbolic(mem_addr)
             mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
-            # Log symbolic memory
-            if "$$" in mem_mask:
-                self._logger.info(f"\t0x{mem_addr:08x}={mem_mask:s}", color="magenta")
-            # Record memory values
+            is_symbolic = "$$" in mem_mask
             self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
-            if "$$" in mem_mask:
+            if is_symbolic:
                 self._recorder.add_symbolic_memory(mem_addr, is_entry=False)
+                sym_mem_addrs.append(mem_addr)
+        idxs = [0]+[idx for idx, (i,j) in enumerate(zip(sym_mem_addrs, sym_mem_addrs[1:]),1) if j-i>1]+[len(sym_mem_addrs)+1]
+        sym_mem_ranges = [sym_mem_addrs[i:j] for i, j in zip(idxs, idxs[1:])]
+        for sym_mem_range in sym_mem_ranges:
+            if len(sym_mem_range) == 1:
+                mem_addr = sym_mem_range[0]
+                byte_mask = self._is_memory_symbolic(mem_addr)
+                mem_mask = "".join("$$" if b else "XX" for b in byte_mask)
+                self._logger.info(f"\t0x{mem_addr:08x}={mem_mask:s}", color="magenta")
+            elif len(sym_mem_range) >= 2:
+                mem_addr1 = sym_mem_range[0]
+                mem_addr2 = sym_mem_range[-1]
+                byte_mask1 = self._is_memory_symbolic(mem_addr1)
+                byte_mask2 = self._is_memory_symbolic(mem_addr2)
+                mem_mask1 = "".join("$$" if b else "XX" for b in byte_mask1)
+                mem_mask2 = "".join("$$" if b else "XX" for b in byte_mask2)
+                self._logger.info(f"\t0x{mem_addr1:08x}={mem_mask1:s}", color="magenta")
+                if len(sym_mem_range) >= 3:
+                    self._logger.info("\t...", color="magenta")
+                self._logger.info(f"\t0x{mem_addr2:08x}={mem_mask2:s}", color="magenta")
+
         self._logger.info("... finished analyzing symbolic state.")
 
     def store(self, trace_file: str) -> None:
