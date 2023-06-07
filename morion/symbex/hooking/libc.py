@@ -18,6 +18,7 @@ class fgets(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.n = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.stream = ctx.getConcreteRegisterValue(ctx.registers.r2)
@@ -26,7 +27,7 @@ class fgets(inst_hook):
                 self._logger.debug(f"\t stream = 0x{self.stream:08x}")
                 # TODO: Taint mode
                 if self._mode == "taint":
-                    pass
+                    self._logger.warning("Taint mode not yet implemented.")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -44,7 +45,7 @@ class fgets(inst_hook):
                 self._logger.debug(f"\t*s = '{s_:s}'")
                 # TODO: Taint mode
                 if self._mode == "taint":
-                    pass
+                    self._logger.warning("Taint mode not yet implemented.")
                 # Model mode
                 elif self._mode == "model":
                     cut = len(s_) > 3
@@ -74,6 +75,7 @@ class memcmp(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.s1  = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.s2  = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.n   = ctx.getConcreteRegisterValue(ctx.registers.r2)
@@ -182,6 +184,7 @@ class memcpy(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.dest = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.src  = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.n    = ctx.getConcreteRegisterValue(ctx.registers.r2)
@@ -253,6 +256,7 @@ class puts(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.s_ = Helper.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
@@ -263,6 +267,120 @@ class puts(inst_hook):
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
         return
 
+
+class sscanf(inst_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "int sscanf(const char *restrict s, const char *restrict format, ...);"
+        return
+
+    def on_entry(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self.s_ = Helper.get_memory_string(ctx, self.s)
+                self.format = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.format_ = Helper.get_memory_string(ctx, self.format)
+                self._logger.debug(f"\t s      = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s      = '{self.s_:s}'")
+                self._logger.debug(f"\t format = 0x{self.format:08x}")
+                self._logger.debug(f"\t*format = '{self.format_:s}'")
+                # Parse conversion specifiers
+                format_pattern = r"""
+                (%|%([1-9][0-9]*)\$)                    # 1/2: (Numbered) argument specification
+                (\*)?                                   # 3  : Assignment-suppressing character
+                ([1-9][0-9]*)?                          # 4  : Maximum field width
+                (m)?                                    # 5  : Assignment-allocation character
+                (hh|h|ll|l|j|z|t|L)?                    # 6  : Length modifier
+                (d|i|o|u|x|a|e|f|g|s|\[|c|p|n|C|S|\%)   # 7  : Conversion specifier
+                """
+                self.conversions = [m for m in re.finditer(format_pattern, self.format_, flags=re.VERBOSE)]
+                # Store input arguments
+                self.args = []
+                num_args = len(self.conversions)
+                # Get first two arguments from registers
+                if num_args >= 1:
+                    arg1 = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                    self.args.append(arg1)
+                    self._logger.debug(f"\t arg1   = 0x{arg1:08x}")
+                if num_args >= 2:
+                    arg2 = ctx.getConcreteRegisterValue(ctx.registers.r3)
+                    self.args.append(arg2)
+                    self._logger.debug(f"\t arg2   = 0x{arg2:08x}")
+                # Get remaining arguments from stack
+                if num_args >= 3:
+                    stack_ptr = ctx.getConcreteRegisterValue(ctx.registers.sp)
+                    for i in range(num_args-2):
+                        argi = ctx.getConcreteMemoryValue(MemoryAccess(stack_ptr+i*4, 4))
+                        self.args.append(argi)
+                        self._logger.debug(f"\t arg{i+3:d}   = 0x{argi:08x}")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+    def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                cnt_assign = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self._logger.debug(f"\tresult = {cnt_assign:d}")
+                
+                # TODO: Taint mode
+                if self._mode == "taint":
+                    self._logger.warning("Taint mode not yet implemented.")
+                # Model mode
+                elif self._mode == "model":
+                    s = self.s
+                    for ci, conversion in enumerate(self.conversions):
+                        # Parse conversion
+                        num_arg = conversion.group(2)        # 2: Numbered argument specification
+                        ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
+                        max_fld_wth = conversion.group(4)    # 4: Maximum field width
+                        ass_all_chr = conversion.group(5)    # 5: Assignment-allocation character
+                        lth_mod = conversion.group(6)        # 6: Length modifier
+                        con_spe = conversion.group(7)        # 7: Conversion specifier
+                        # Argument specification
+                        if num_arg is None:
+                            arg_ptr = self.args[ci]
+                        # Numbered argument specification
+                        elif num_arg <= cnt_assign:
+                            arg_ptr = self.args[num_arg-1]
+                        # Assignment suppressing
+                        if ass_sup_chr == '*':
+                            continue
+                        # Conversion specifier s (currently no support for length modifier l)
+                        if con_spe == 's' and lth_mod != 'l':
+                            # Find offset in input string
+                            inp_str = Helper.get_memory_string(ctx, s)
+                            arg_str = Helper.get_memory_string(ctx, arg_ptr)
+                            arg_off = inp_str.find(arg_str)
+                            if arg_off < 0: continue
+                            # Assignment allocation
+                            if ass_all_chr == 'm':
+                                arg_ptr = ctx.getConcreteMemoryValue(MemoryAccess(arg_ptr, CPUSIZE.DWORD))
+                            # Move symbolic bytes
+                            for i in range(len(arg_str)):
+                                sym_exp = ctx.getSymbolicMemory(s+arg_off+i)
+                                if sym_exp:
+                                    ctx.assignSymbolicExpressionToMemory(
+                                        sym_exp, MemoryAccess(arg_ptr+i, CPUSIZE.BYTE)
+                                    )
+                            s += arg_off + len(arg_str)
+                        # TODO: Support other conversions
+                        else:
+                            self._logger.warning(f"Unsupported conversion.")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return
+    
 
 class strlen(inst_hook):
 
@@ -275,6 +393,7 @@ class strlen(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.s_ = Helper.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
@@ -341,6 +460,7 @@ class strtol(inst_hook):
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
+                # Log arguments
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.nptr_ = Helper.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from morion.log                     import Logger
-from morion.tracing.gdb.hooking.lib import inst_hook
-from morion.tracing.gdb.trace       import GdbHelper
-from typing                         import List, Tuple
+import re
+from   morion.log                     import Logger
+from   morion.tracing.gdb.hooking.lib import inst_hook
+from   morion.tracing.gdb.trace       import GdbHelper
+from   typing                         import List, Tuple
 
 
 class fgets(inst_hook):
@@ -48,13 +49,11 @@ class fgets(inst_hook):
                 # Move result to return register r0
                 code_result = self._arm_mov_to_reg("r0", s)
                 return super().on_leave(code_cpy + code_result)
-                # # Move result to return register r0
-                # code = self._arm_mov_to_reg("r0", s)
-                # return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return []
+
 
 class free(inst_hook):
 
@@ -301,6 +300,149 @@ class puts(inst_hook):
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+
+class sscanf(inst_hook):
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
+        self.synopsis = "int sscanf(const char *restrict s, const char *restrict format, ...);"
+        return
+
+    def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                self.s = GdbHelper.get_register_value("r0")
+                self.s_ = GdbHelper.get_memory_string(self.s)
+                self.format = GdbHelper.get_register_value("r1")
+                self.format_ = GdbHelper.get_memory_string(self.format)
+                self._logger.debug(f"\t s      = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s      = '{self.s_:s}'")
+                self._logger.debug(f"\t format = 0x{self.format:08x}")
+                self._logger.debug(f"\t*format = '{self.format_:s}'")
+                # Parse conversion specifiers
+                format_pattern = r"""
+                (%|%([1-9][0-9]*)\$)                    # 1/2: (Numbered) argument specification
+                (\*)?                                   # 3  : Assignment-suppressing character
+                ([1-9][0-9]*)?                          # 4  : Maximum field width
+                (m)?                                    # 5  : Assignment-allocation character
+                (hh|h|ll|l|j|z|t|L)?                    # 6  : Length modifier
+                (d|i|o|u|x|a|e|f|g|s|\[|c|p|n|C|S|\%)   # 7  : Conversion specifier
+                """
+                self.conversions = [m for m in re.finditer(format_pattern, self.format_, flags=re.VERBOSE)]
+                # Store input arguments
+                self.args = []
+                num_args = len(self.conversions)
+                # Get first two arguments from registers
+                if num_args >= 1:
+                    arg1 = GdbHelper.get_register_value("r2")
+                    self.args.append(arg1)
+                    self._logger.debug(f"\t arg1   = 0x{arg1:08x}")
+                if num_args >= 2:
+                    arg2 = GdbHelper.get_register_value("r3")
+                    self.args.append(arg2)
+                    self._logger.debug(f"\t arg2   = 0x{arg2:08x}")
+                # Get remaining arguments from stack
+                if num_args >= 3:
+                    stack_ptr = GdbHelper.get_register_value("sp")
+                    for i in range(num_args-2):
+                        argi = GdbHelper.get_memory_value(stack_ptr+i*4, 4)
+                        self.args.append(argi)
+                        self._logger.debug(f"\t arg{i+3:d}   = 0x{argi:08x}")
+                return super().on_entry()
+            raise Exception(f"Architecture '{arch:s}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
+        return []
+
+    def on_leave(self) -> List[Tuple[int, bytes, str, str]]:
+        try:
+            arch = GdbHelper.get_architecture()
+            if arch in ["armv6", "armv7"]:
+                # Log arguments
+                cnt_assign = GdbHelper.get_register_value("r0")
+                self._logger.debug(f"\tresult = {cnt_assign:d}")
+                
+                # Helper function to determine byte-length of an argument
+                def get_arg_length(
+                        ass_sup_chr: str,
+                        max_fld_wth: str,
+                        ass_all_chr: str,
+                        lth_mod: str,
+                        con_spe: str
+                    ) -> int:
+                    length = -1
+
+                    if ass_sup_chr == '*':
+                        length = 0
+                    elif lth_mod == 'hh':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 1
+                    elif lth_mod == 'h':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 2
+                    elif lth_mod == 'l':
+                        if (ass_all_chr == 'm' or
+                            con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n'] or
+                            con_spe in ['c', 's', '[']):
+                            length = 4
+                        elif con_spe in ['a', 'A', 'e', 'E', 'f', 'F', 'g', 'G']:
+                            length = 8
+                    elif lth_mod == 'll':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 8
+                    elif lth_mod == 'j':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 8
+                    elif lth_mod == 'z':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 4
+                    elif lth_mod == 't':
+                        if con_spe in ['d', 'i', 'o', 'u', 'x', 'X', 'n']:
+                            length = 4
+                    elif lth_mod == 'L':
+                        if con_spe in ['a', 'A', 'e', 'E', 'f', 'F', 'g', 'G']:
+                            length = 8
+
+                    if max_fld_wth is not None:
+                        length = min(length, int(max_fld_wth))
+
+                    return length
+
+                # Move arguments
+                code_inputs = []
+                for ci, conversion in enumerate(self.conversions):
+                    # Parse conversion
+                    num_arg = conversion.group(2)        # 2: Numbered argument specification
+                    ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
+                    max_fld_wth = conversion.group(4)    # 4: Maximum field width
+                    ass_all_chr = conversion.group(5)    # 5: Assignment-allocation character
+                    lth_mod = conversion.group(6)        # 6: Length modifier
+                    con_spe = conversion.group(7)        # 7: Conversion specifier
+                    # Argument specification
+                    if num_arg is None:
+                        arg_ptr = self.args[ci]
+                    # Numbered argument specification
+                    elif num_arg <= cnt_assign:
+                        arg_ptr = self.args[num_arg-1]
+                    # Argument length
+                    arg_len = get_arg_length(ass_sup_chr, max_fld_wth, ass_all_chr, lth_mod, con_spe)
+                    # Move argument
+                    if arg_len < 0:
+                        arg_len = len(GdbHelper.get_memory_string(arg_ptr))+1
+                    for i in range(arg_len):
+                        arg_val = GdbHelper.get_memory_value(arg_ptr+i, 1)
+                        code_inputs.extend(self._arm_mov_to_mem(arg_ptr+i, arg_val, 1))
+
+                # Move result to return register r0
+                code_result = self._arm_mov_to_reg("r0", cnt_assign)
+                return super().on_leave(code_inputs + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
