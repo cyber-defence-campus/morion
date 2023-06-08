@@ -350,6 +350,115 @@ class TestModelLibcMemcmp(TestSymbex):
 
         return
 
-    
+
+class TestModelLibcSscanf(TestSymbex):
+
+    def test_strings(self) -> None:
+        # Init trace file
+        self._write_tmp_trace_file({
+            'info': {'arch': 'armv7', 'thumb': False},
+            'hooks': {
+                'libc': {
+                    'sscanf': [{
+                        'entry' : '0x00cffc',
+                        'leave' : '0x00d000',
+                        'target': '0x001000',
+                        'mode'  : 'model'
+                    }]
+                }
+            },
+            'states': {
+                'entry': {
+                    'addr': '0x00cffc',
+                    'regs': {
+                        'r0': ['0xbeffc104'],           # s
+                        'r1': ['0x000120f8'],           # format
+                        'r2': ['0xbeffc704'],           # arg1
+                        'r3': ['0xbeffc604']            # arg2
+                    },
+                    'mems': {
+                        '0x000120f8': ['0x25'],         # format[0] = '%'
+                        '0x000120f9': ['0x73'],         # format[1] = 's'
+                        '0x000120fa': ['0x20'],         # format[2] = ' '
+                        '0x000120fb': ['0x25'],         # format[3] = '%'
+                        '0x000120fc': ['0x73'],         # format[4] = 's'
+                        '0x000120fd': ['0x00'],         # format[5] = '\x00'
+                        '0xbeffc104': ['0x41'],         # s[0]      = 'A'
+                        '0xbeffc105': ['0x42', '$$'],   # s[1]      = 'B'
+                        '0xbeffc106': ['0x43', '$$'],   # s[2]      = 'C'
+                        '0xbeffc107': ['0x20'],         # s[3]      = ' '
+                        '0xbeffc108': ['0x44'],         # s[4]      = 'D'
+                        '0xbeffc109': ['0x20'],         # s[5]      = ' '
+                        '0xbeffc10a': ['0x00'],         # s[6]      = '\x00'
+                        '0xbeffc604': ['0x00'],         # arg2[0]   = '\x00'
+                        '0xbeffc605': ['0x00'],         # arg2[1]   = '\x00'
+                        '0xbeffc606': ['0x00'],         # arg2[2]   = '\x00'
+                        '0xbeffc607': ['0x00'],         # arg2[3]   = '\x00'
+                        '0xbeffc704': ['0x00'],         # arg1[0]   = '\x00'
+                        '0xbeffc705': ['0x00'],         # arg1[1]   = '\x00'
+                        '0xbeffc706': ['0x00'],         # arg1[2]   = '\x00'
+                        '0xbeffc707': ['0x00'],         # arg1[3]   = '\x00'
+                    }
+                },
+                'leave': {
+                    'addr': '0x00d004'
+                }
+            },
+            'instructions': [
+                ['0x00cffc', 'ff cf ff ea', 'b #-0xbffc',       '// Hook: libc:sscanf (on=entry, mode=model)'],
+                ['0x001000', '04 07 0c e3', 'mov  r0, #0xc704', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001014', '05 07 0c e3', 'mov  r0, #0xc705', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001028', '06 07 0c e3', 'mov  r0, #0xc706', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001030', '43 10 a0 e3', 'mov  r1, #0x43',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00103c', '07 07 0c e3', 'mov  r0, #0xc707', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001044', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001048', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00104c', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001050', '04 06 0c e3', 'mov  r0, #0xc604', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001054', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001058', '44 10 a0 e3', 'mov  r1, #0x44',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00105c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001060', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001064', '05 06 0c e3', 'mov  r0, #0xc605', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001068', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00106c', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001070', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001074', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001078', '02 00 a0 e3', 'mov  r0, #0x2',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00107c', '00 00 40 e3', 'movt r0, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x001080', 'de 2f 00 ea', 'b #0xbf80',        '// Hook: libc:sscanf (on=leave, mode=model)'],
+                ['0x00d000', '00 f0 20 e3', 'nop',              '']
+            ]
+        })
+
+        # Run symbolic execution
+        self.se.load(self.tf.name)
+        self.se.run()
+
+        # TODO: Validate results
+        arg1_mem_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc704, 4))
+        arg1_mem_val = self.se.ctx.evaluateAstViaSolver(arg1_mem_ast)
+        arg2_mem_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc604, 4))
+        arg2_mem_val = self.se.ctx.evaluateAstViaSolver(arg2_mem_ast)
+
+        self.assertTrue(arg1_mem_val == 0x00434241)
+        self.assertTrue(arg2_mem_val == 0x00000044)
+
+        # TODO: Adjust model
+        self.assertTrue(bool(self.se.ctx.getModel(arg2_mem_ast != 0x00000044)))
+        import IPython; IPython.embed(header="Model")
+
 if __name__ == "__main__":
     unittest.main()
