@@ -111,7 +111,7 @@ class GdbHelper:
             opcode = GdbHelper.get_memory_value(addr, CPUSIZE.DWORD)
             opcode = opcode.to_bytes(CPUSIZE.DWORD, byteorder=border)
         except Exception as e:
-            logger.error(f"Failed to load opcodes at address 0x{addr:08x}: {str(e):s}")
+            logger.error(f"Failed to load opcodes at address 0x{addr:08x}: '{str(e):s}'")
             return None, None, None
         # Get source code line (if available)
         try:
@@ -253,14 +253,14 @@ class GdbTracer:
             if ctx is None: ctx = self._init_context()
             try:
                 ctx.disassembly(inst)
-            except Exception as exc:
-                logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():08x}: '{str(exc):s}'")
+            except Exception as e:
+                logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
                 return False
             # Building semantics
             try:
                 supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
-            except Exception as exc:
-                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(exc):s}'")
+            except Exception as e:
+                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
                 return False
             return supported
 
@@ -288,8 +288,8 @@ class GdbTracer:
                     # Set register value in context
                     mctx.setConcreteRegisterValue(reg, reg_value)
                     mctx.concretizeRegister(reg)
-                except Exception as exc:
-                    logger.error(f"\tFailed to process register {reg_name:s}: '{str(exc):s}'")
+                except Exception as e:
+                    logger.error(f"\tFailed to process register {reg_name:s}: '{str(e):s}'")
 
             for reg, _ in inst.getReadRegisters():
                 process_register(reg)
@@ -319,85 +319,88 @@ class GdbTracer:
                             self._accessed_mems[mem_addr+i] = mem_value
                             self._recorder.add_concrete_memory(mem_addr+i, mem_value, is_entry=True)
                             logger.debug(f"\t0x{mem_addr+i:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
-                    except Exception as exc:
-                        logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:08x}: '{str(exc):s}'")
+                    except Exception as e:
+                        logger.error(f"\tFailed to process memory at address 0x{mem_addr+i:08x}: '{str(e):s}'")
             return True, mctx
 
+        try:
+            while True:
+                # Get next instruction
+                pc, opcode, code = GdbHelper.get_instruction()
 
-        while True:
-            # Get next instruction
-            pc, opcode, code = GdbHelper.get_instruction()
+                # Stop condition
+                if not pc or pc in self._stop_addrs: break
+                inst = Instruction(pc, opcode)
 
-            # Stop condition
-            if not pc or pc in self._stop_addrs: break
-            inst = Instruction(pc, opcode)
+                # Execute potential hook functions
+                is_hooked = execute_hook_functions(inst)
+                if is_hooked: continue
 
-            # Execute potential hook functions
-            is_hooked = execute_hook_functions(inst)
-            if is_hooked: continue
+                # Record accessed registers and memory locations
+                success, ctx = record_reg_mem_accesses(inst, code)
+                if not success: break
 
-            # Record accessed registers and memory locations
-            success, ctx = record_reg_mem_accesses(inst, code)
-            if not success: break
+                # Handle ARM32 IT instructions
+                # NOTE: Hooking instructions within an ARM32 IT block is not supported
+                if inst.getType() == OPCODE.ARM32.IT:
+                    # Parse condition switches from disassembly
+                    rmatch = re.match(r"^i(t[te]{0,3})\s", inst.getDisassembly())
 
-            # Handle ARM32 IT instructions
-            # NOTE: Hooking instructions within an ARM32 IT block is not supported
-            if inst.getType() == OPCODE.ARM32.IT:
-                # Parse condition switches from disassembly
-                rmatch = re.match(r"^i(t[te]{0,3})\s", inst.getDisassembly())
+                    # Store instructions within IT block
+                    addr     = pc
+                    opcode   = inst.getOpcode()
+                    it_block = {}
+                    for condition in rmatch.group(1):
+                        addr, opcode, code = GdbHelper.get_instruction(addr + len(opcode))
+                        inst = Instruction(addr, opcode)
+                        process_instruction(inst)
+                        it_block[addr] = (condition, inst, code, False)
+                        opcode = inst.getOpcode()
 
-                # Store instructions within IT block
-                addr     = pc
-                opcode   = inst.getOpcode()
-                it_block = {}
-                for condition in rmatch.group(1):
-                    addr, opcode, code = GdbHelper.get_instruction(addr + len(opcode))
-                    inst = Instruction(addr, opcode)
-                    process_instruction(inst)
-                    it_block[addr] = (condition, inst, code, False)
-                    opcode = inst.getOpcode()
-
-                # Record instructions within IT block
-                while True:
-                    # Step through instructions inside IT block
+                    # Record instructions within IT block
+                    while True:
+                        # Step through instructions inside IT block
+                        gdb.execute("stepi")
+                        pc = GdbHelper.get_register_value("pc")
+                        for addr, (condition, inst, code, recorded) in it_block.items():
+                            # Record non-executed instruction (without register and memory accesses)
+                            if not recorded and addr < pc:
+                                opcode = inst.getOpcode()
+                                disas  = inst.getDisassembly()
+                                if code: code += " "
+                                code = f"{code:s}// IT Block: Instruction not exectued"
+                                self._recorder.add_instruction(addr, opcode, disas, code)
+                                it_block[addr] = (condition, inst, code, True)
+                            # Record executed instruction (with register and memory acccesses)
+                            elif not recorded and addr == pc:
+                                if code: code += " "
+                                code = f"{code:s}// IT Block: Instruction executed"
+                                record_reg_mem_accesses(inst, code)
+                                it_block[addr] = (condition, inst, code, True)
+                        # Program counter left IT block
+                        if not pc in it_block:
+                            break
+                else:
+                    # Step over instruction
                     gdb.execute("stepi")
-                    pc = GdbHelper.get_register_value("pc")
-                    for addr, (condition, inst, code, recorded) in it_block.items():
-                        # Record non-executed instruction (without register and memory accesses)
-                        if not recorded and addr < pc:
-                            opcode = inst.getOpcode()
-                            disas  = inst.getDisassembly()
-                            if code: code += " "
-                            code = f"{code:s}// IT Block: Instruction not exectued"
-                            self._recorder.add_instruction(addr, opcode, disas, code)
-                            it_block[addr] = (condition, inst, code, True)
-                        # Record executed instruction (with register and memory acccesses)
-                        elif not recorded and addr == pc:
-                            if code: code += " "
-                            code = f"{code:s}// IT Block: Instruction executed"
-                            record_reg_mem_accesses(inst, code)
-                            it_block[addr] = (condition, inst, code, True)
-                    # Program counter left IT block
-                    if not pc in it_block:
-                        break
-            else:
-                # Step over instruction
-                gdb.execute("stepi")
 
-        # Store accessed registers at leave
-        for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
-            reg_value = GdbHelper.get_register_value(reg_name)
-            self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
+            # Store accessed registers at leave
+            for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+                reg_value = GdbHelper.get_register_value(reg_name)
+                self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
 
-        # Store accessed memory at leave
-        for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
-            mem_addr = int(mem_addr, base=16)
-            mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
-            self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
+            # Store accessed memory at leave
+            for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
+                mem_addr = int(mem_addr, base=16)
+                mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
+                self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
 
-        self._recorder.add_address(pc, False)
-        self._stop_addrs.clear()
-        logger.info(f"... finished tracing (pc=0x{pc:08x}).")
+        except Exception as e:
+            logger.error(f"\tFailed to execute instruction at address 0x{pc:08x}: '{str(e):s}'")
+        finally:
+            self._recorder.add_address(pc, False)
+            self._stop_addrs.clear()
+            logger.info(f"... finished tracing (pc=0x{pc:08x}).")
         return True
 
     def load(self, trace_file: str) -> bool:
