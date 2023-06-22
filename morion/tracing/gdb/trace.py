@@ -69,37 +69,59 @@ class GdbHelper:
     def set_register_value(reg_name: str, reg_value: int) -> None:
         gdb.parse_and_eval(f"${reg_name:s} = {reg_value:d}")
         return
-
+    
+    @staticmethod
+    def get_memory_bytes(mem_addr: int, mem_size: int = CPUSIZE.QWORD) -> bytes:
+        v = b""
+        if not mem_addr: return v
+        for i in range(mem_size):
+            # Examine byte at address `mem_addr+i`
+            b = gdb.execute(f"x/1xb {mem_addr+i:d}", to_string=True)
+            # Parse byte value
+            pattern = r"^0x[0-9a-fA-F]+[^:]*:\s*0x([0-9a-fA-F]{1,2})$"
+            match = re.match(pattern, b)
+            if match is None:
+                logger.error(f"Failed to parse byte at address 0x{mem_addr+i:08x}: '{b:s}'")
+                break
+            v += bytes.fromhex(match.group(1))
+        return v
+ 
     @staticmethod
     def get_memory_value(mem_addr: int, mem_size: int = CPUSIZE.QWORD) -> int:
-        # Handle NULL
-        if not mem_addr: return 0
-        # Examine `mem_size` bytes at address `mem_addr`
-        memory = gdb.execute(f"x/{mem_size:d}xb {mem_addr:d}", to_string=True)
-        # Parse address and bytes
-        pattern = r"^0x([0-9a-f]+)[^:]*:" + mem_size * r"[^0x]*0x([0-9a-f]{2})" + r".*$"
-        match = re.match(pattern, memory)
+        v = GdbHelper.get_memory_bytes(mem_addr, mem_size)
         # Transfor bytes to unsigned integer respecting endianess
-        mem_value = bytes.fromhex(''.join(match.groups()[1:mem_size+1]))
-        return int.from_bytes(mem_value, byteorder=GdbHelper.get_byteorder(), signed=False)
+        mem_value = int.from_bytes(v, byteorder=GdbHelper.get_byteorder(), signed=False)
+        return mem_value
 
     @staticmethod
     def set_memory_value(mem_addr: int, mem_value: int) -> None:
         gdb.parse_and_eval(f"{{unsigned char}} 0x{mem_addr:x} = 0x{mem_value:x}")
         return
-
+    
     @staticmethod
     def get_memory_string(mem_addr: int) -> str:
-        # Handle NULL
-        if not mem_addr: return ''
-        # Examine string at address `mem_addr`
-        memory_string = gdb.execute(f'printf "%s", {mem_addr:d}', to_string=True)
-        # Parse string
-        pattern = r"^([^\n]*)$"
-        match = re.match(pattern, memory_string)
-        if match is not None:
-            return match.group(1)
-        return ''
+        s = ""
+        if not mem_addr: return s
+        while True:
+            # Examine byte at address `mem_addr`
+            b = gdb.execute(f"x/1xb {mem_addr:d}", to_string=True)
+            # Parse byte value
+            pattern = r"^0x[0-9a-fA-F]+[^:]*:\s*0x([0-9a-fA-F]{1,2})$"
+            match = re.match(pattern, b)
+            if match is None:
+                logger.error(f"Failed to parse byte at address 0x{mem_addr:08x}: '{b:s}'")
+                break
+            # Terminate at a null byte
+            b = match.group(1)
+            if b == '00':
+                break
+            # Decode value to UTF-8 string
+            b = bytes.fromhex(match.group(1))
+            b = b.decode("utf-8", errors="replace")
+            # Step towards next null byte
+            s += b
+            mem_addr += 1
+        return s
 
     @staticmethod
     def get_instruction(addr: int = None) -> Tuple[int, bytes, str]:

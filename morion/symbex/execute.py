@@ -20,17 +20,35 @@ from   typing                               import List
 
 class Helper:
 
+    # @staticmethod
+    # def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
+    #     s = ""
+    #     addr = mem_addr
+    #     while True:
+    #         value = ctx.getConcreteMemoryValue(addr)
+    #         char = chr(value)
+    #         if char not in string.printable: char = ""
+    #         s += char
+    #         if not value: break
+    #         addr += CPUSIZE.BYTE
+    #     return s
+    
     @staticmethod
     def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
         s = ""
-        addr = mem_addr
+        if not mem_addr: return s
         while True:
-            value = ctx.getConcreteMemoryValue(addr)
-            char = chr(value)
-            if char not in string.printable: char = ""
-            s += char
-            if not value: break
-            addr += CPUSIZE.BYTE
+            # Examine byte at address `mem_addr`
+            c = ctx.getConcreteMemoryValue(mem_addr)
+            # Terminate at a null byte
+            if c == 0:
+                break
+            # Decode value to UTF-8 string
+            c = bytes.fromhex(f"{c:02x}")
+            c = c.decode("utf-8", errors="replace")
+            # Step towards next null byte
+            s += c
+            mem_addr += 1
         return s
 
 
