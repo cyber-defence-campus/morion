@@ -42,6 +42,7 @@ class fgets(inst_hook):
                 self._logger.debug(f"\t*s = '{s_:s}'")
                 # Move s[i]
                 code_cpy = []
+                # NOTE: len(_s) might be incorrect when stream contains NULL bytes
                 for i in range(len(s_)):
                     mem_val = GdbHelper.get_memory_value(s+i, 1)
                     code_cpy.extend(self._arm_mov_to_mem(s+i, mem_val, 1))
