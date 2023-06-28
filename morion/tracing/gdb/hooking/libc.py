@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 import re
+from   morion.help                    import Converter
 from   morion.log                     import Logger
 from   morion.tracing.gdb.hooking.lib import inst_hook
 from   morion.tracing.gdb.trace       import GdbHelper
@@ -20,7 +21,7 @@ class fgets(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 self.s = GdbHelper.get_register_value("r0")
-                self.n = GdbHelper.get_register_value("r1")
+                self.n = Converter.uint_to_int(GdbHelper.get_register_value("r1"))
                 self.stream = GdbHelper.get_register_value("r2")
                 self._logger.debug(f"\t s      = 0x{self.s:08x}")
                 self._logger.debug(f"\t n      = {self.n:d}")
@@ -36,19 +37,17 @@ class fgets(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                s = GdbHelper.get_register_value("r0")
-                s_ = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\t s = 0x{s:08x}")
-                self._logger.debug(f"\t*s = '{s_:s}'")
+                self.s_ = GdbHelper.get_memory_string(self.s)
+                self._logger.debug(f"\t s = 0x{self.s:08x}")
+                self._logger.debug(f"\t*s = '{self.s_:s}'")
                 # Move s[i]
                 code_cpy = []
-                # NOTE: len(_s) might be incorrect when stream contains NULL bytes
-                for i in range(len(s_)):
-                    mem_val = GdbHelper.get_memory_value(s+i, 1)
-                    code_cpy.extend(self._arm_mov_to_mem(s+i, mem_val, 1))
-                code_cpy.extend(self._arm_mov_to_mem(s+len(s_), 0x00, 1))
+                for i in range(len(self.s_)):
+                    mem_val = GdbHelper.get_memory_value(self.s+i, 1)
+                    code_cpy.extend(self._arm_mov_to_mem(self.s+i, mem_val, 1))
+                code_cpy.extend(self._arm_mov_to_mem(self.s+len(self.s_), 0x00, 1))
                 # Move result to return register r0
-                code_result = self._arm_mov_to_reg("r0", s)
+                code_result = self._arm_mov_to_reg("r0", self.s)
                 return super().on_leave(code_cpy + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -142,10 +141,10 @@ class memcmp(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code = self._arm_mov_to_reg("r0", result)
+                code = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -224,10 +223,10 @@ class printf(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
+                code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -259,10 +258,10 @@ class putchar(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
+                code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -296,10 +295,10 @@ class puts(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
+                code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -367,7 +366,7 @@ class sscanf(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                cnt_assign = GdbHelper.get_register_value("r0")
+                cnt_assign = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {cnt_assign:d}")
                 
                 # Helper function to determine byte-length of an argument
@@ -413,12 +412,11 @@ class sscanf(inst_hook):
 
                     if max_fld_wth is not None:
                         length = min(length, int(max_fld_wth))
-
                     return length
 
                 # Move arguments
                 code_inputs = []
-                for ci, conversion in enumerate(self.conversions):
+                for ci, conversion in enumerate(self.conversions[0:max(0, cnt_assign)]):
                     # Parse conversion
                     num_arg = conversion.group(2)        # 2: Numbered argument specification
                     ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
@@ -442,7 +440,7 @@ class sscanf(inst_hook):
                         code_inputs.extend(self._arm_mov_to_mem(arg_ptr+i, arg_val, 1))
 
                 # Move result to return register r0
-                code_result = self._arm_mov_to_reg("r0", cnt_assign)
+                code_result = self._arm_mov_to_reg("r0", Converter.int_to_uint(cnt_assign))
                 return super().on_leave(code_inputs + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -481,10 +479,10 @@ class strcmp(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
+                code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -525,10 +523,10 @@ class strncmp(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                result = GdbHelper.get_register_value("r0")
+                result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Move result to return register r0
-                code  = self._arm_mov_to_reg("r0", result)
+                code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -589,7 +587,7 @@ class strtol(inst_hook):
                 self.nptr   = GdbHelper.get_register_value("r0")
                 self.nptr_  = GdbHelper.get_memory_string(self.nptr)
                 self.endptr = GdbHelper.get_register_value("r1")
-                self.base   = GdbHelper.get_register_value("r2")
+                self.base   = Converter.uint_to_int(GdbHelper.get_register_value("r2"))
                 self._logger.debug(f"\t nptr   = 0x{self.nptr:08x}")
                 self._logger.debug(f"\t*nptr   = '{self.nptr_:s}'")
                 self._logger.debug(f"\t endptr = 0x{self.endptr:08x}")
@@ -607,14 +605,14 @@ class strtol(inst_hook):
                 # Log arguments
                 endptr_ = GdbHelper.get_memory_value(self.endptr, 4)
                 endptr__ = GdbHelper.get_memory_string(endptr_)
-                result   = GdbHelper.get_register_value("r0")
+                result   = Converter.ulong_to_long(GdbHelper.get_register_value("r0"))
                 self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
                 self._logger.debug(f"\t**endptr = '{endptr__:s}'")
                 self._logger.debug(f"\t  result = {result:d}")
                 # Move *endptr to memory endptr
                 code_endptr = self._arm_mov_to_mem(self.endptr, endptr_)
                 # Move result to return register r0
-                code_result  = self._arm_mov_to_reg("r0", result)
+                code_result  = self._arm_mov_to_reg("r0", Converter.long_to_ulong(result))
                 return super().on_leave(code_endptr + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:

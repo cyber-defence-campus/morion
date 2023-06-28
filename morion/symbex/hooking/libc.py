@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
+from    morion.help               import Converter
 from    morion.log                import Logger
 from    morion.symbex.execute     import Helper
 from    morion.symbex.hooking.lib import inst_hook
@@ -20,7 +21,7 @@ class fgets(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.n = ctx.getConcreteRegisterValue(ctx.registers.r1)
+                self.n = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r1))
                 self.stream = ctx.getConcreteRegisterValue(ctx.registers.r2)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
                 self._logger.debug(f"\t n = {self.n:d}")
@@ -108,7 +109,7 @@ class memcmp(inst_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Log arguments
-                result = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                result = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r0))
                 self._logger.debug(f"\tresult = {result:d}")
                 # Taint mode
                 if self._mode == "taint":
@@ -328,7 +329,7 @@ class sscanf(inst_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Log arguments
-                cnt_assign = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                cnt_assign = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r0))
                 self._logger.debug(f"\tresult = {cnt_assign:d}")
                 # TODO: Taint mode
                 if self._mode == "taint":
@@ -336,7 +337,7 @@ class sscanf(inst_hook):
                 # Model mode
                 elif self._mode == "model":
                     s = self.s
-                    for ci, conversion in enumerate(self.conversions):
+                    for ci, conversion in enumerate(self.conversions[0:max(0, cnt_assign)]):
                         # Parse conversion
                         num_arg = conversion.group(2)        # 2: Numbered argument specification
                         ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
@@ -463,7 +464,7 @@ class strtol(inst_hook):
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
                 self.nptr_ = Helper.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
-                self.base = ctx.getConcreteRegisterValue(ctx.registers.r2)
+                self.base = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r2))
                 self._logger.debug(f"\t  nptr   = 0x{self.nptr:08x}")
                 self._logger.debug(f"\t *nptr   = '{self.nptr_:s}'")
                 self._logger.debug(f"\t  endptr = 0x{self.endptr:08x}")
@@ -495,7 +496,7 @@ class strtol(inst_hook):
                 # Log arguments
                 endptr_ = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
                 endptr__ = Helper.get_memory_string(ctx, endptr_)
-                result = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                result = Converter.ulong_to_long(ctx.getConcreteRegisterValue(ctx.registers.r0))
                 self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
                 self._logger.debug(f"\t**endptr = '{endptr__:s}'")
                 self._logger.debug(f"\t  result = {result:d}")
