@@ -37,17 +37,18 @@ class fgets(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                self.s_ = GdbHelper.get_memory_string(self.s)
-                self._logger.debug(f"\t s = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s = '{self.s_:s}'")
+                s = GdbHelper.get_register_value("r0")
+                s_ = GdbHelper.get_memory_string(s)
+                self._logger.debug(f"\t s = 0x{s:08x}")
+                self._logger.debug(f"\t*s = '{s_:s}'")
                 # Move s[i]
                 code_cpy = []
-                for i in range(len(self.s_)):
-                    mem_val = GdbHelper.get_memory_value(self.s+i, 1)
-                    code_cpy.extend(self._arm_mov_to_mem(self.s+i, mem_val, 1))
-                code_cpy.extend(self._arm_mov_to_mem(self.s+len(self.s_), 0x00, 1))
+                if len(s_) > 0:
+                    for i in range(len(s_)+1):
+                        mem_val = GdbHelper.get_memory_value(s+i, 1)
+                        code_cpy.extend(self._arm_mov_to_mem(s+i, mem_val, 1))
                 # Move result to return register r0
-                code_result = self._arm_mov_to_reg("r0", self.s)
+                code_result = self._arm_mov_to_reg("r0", s)
                 return super().on_leave(code_cpy + code_result)
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
