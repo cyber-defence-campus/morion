@@ -8,6 +8,7 @@ class Shell:
         import code
         import readline
         import sys
+        from   pprint import pprint
 
         # stdin or stdout are not connected to the TTY
         if not sys.stdin.isatty() or not sys.stdout.isatty():
@@ -37,6 +38,7 @@ class Shell:
 
         # stdin and stdout are connected to the TTY
         ns = kwargs
+        ns['pprint'] = pprint
         try:
             import IPython
         except ImportError:
