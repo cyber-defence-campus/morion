@@ -279,12 +279,17 @@ class GdbTracer:
                 logger.error(f"Failed to disassemble instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
                 return False
             # Building semantics
-            try:
-                supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
-            except Exception as e:
-                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
+            res = ctx.buildSemantics(inst)
+            if res != EXCEPTION.NO_FAULT:
+                logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: {res:d}")
                 return False
-            return supported
+            return True
+            # try:
+            #     supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
+            # except Exception as e:
+            #     logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
+            #     return False
+            # return supported
 
         def record_reg_mem_accesses(inst: Instruction, code: str = "") -> Tuple[bool, TritonContext]:
             # Create fresh context
