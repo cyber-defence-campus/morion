@@ -49,15 +49,16 @@ class fgets(inst_hook):
                     self._logger.warning("Taint mode not yet implemented.")
                 # Model mode
                 elif self._mode == "model":
-                    cut = len(s_) > 3
-                    for i in range(len(s_)):
-                        mem = MemoryAccess(s+i, CPUSIZE.BYTE)
-                        ctx.symbolizeMemory(mem, f"0x{s+i:08x} (MODEL:fgets@libc:s+{i:d})")
-                        if not cut or i == 0:
-                            self._logger.debug(f"\t0x{s+i:08x}=$$")
-                        elif i == len(s_)-1:
-                            self._logger.debug(f"\t...")
-                            self._logger.debug(f"\t0x{s+i:08x}=$$")
+                    cut = self.n-1 > 3
+                    if len(s_) > 0:
+                        for i in range(self.n-1):
+                            mem = MemoryAccess(s+i, CPUSIZE.BYTE)
+                            ctx.symbolizeMemory(mem, f"0x{s+i:08x} (MODEL:fgets@libc:s+{i:d})")
+                            if not cut or i == 0:
+                                self._logger.debug(f"\t0x{s+i:08x}=$$")
+                            elif i == self.n-2:
+                                self._logger.debug(f"\t...")
+                                self._logger.debug(f"\t0x{s+i:08x}=$$")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -356,22 +357,31 @@ class sscanf(inst_hook):
                             continue
                         # Conversion specifier s (currently no support for length modifier l)
                         if con_spe == 's' and lth_mod != 'l':
-                            # Find offset in input string
+                            # Parse string
                             inp_str = Helper.get_memory_string(ctx, s)
-                            arg_str = Helper.get_memory_string(ctx, arg_ptr)
-                            arg_off = inp_str.find(arg_str)
-                            if arg_off < 0: continue
+                            m = re.search(r"([^\s]+)", inp_str)
+                            if m is None or len(m.groups()) != 1:
+                                self._logger.warning(f"Failed to apply conversion specifier 's' to '{inp_str:s}'")
+                                continue
+                            arg_str = m.group(1)
+                            arg_off = m.start()
                             # Assignment allocation
                             if ass_all_chr == 'm':
                                 arg_ptr = ctx.getConcreteMemoryValue(MemoryAccess(arg_ptr, CPUSIZE.DWORD))
                             # Move symbolic bytes
+                            cut = len(arg_str) > 3
                             for i in range(len(arg_str)):
                                 sym_exp = ctx.getSymbolicMemory(s+arg_off+i)
                                 if sym_exp:
                                     ctx.assignSymbolicExpressionToMemory(
                                         sym_exp, MemoryAccess(arg_ptr+i, CPUSIZE.BYTE)
                                     )
-                            s += arg_off + len(arg_str)
+                                    if not cut or i == 0:
+                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                                    elif i == len(arg_str)-1:
+                                        self._logger.debug(f"\t...")
+                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                            s += m.end()
                         # TODO: Support other conversions
                         else:
                             self._logger.warning(f"Unsupported conversion.")

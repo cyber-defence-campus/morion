@@ -44,7 +44,7 @@ class fgets(inst_hook):
                 # Move s[i]
                 code_cpy = []
                 if len(s_) > 0:
-                    for i in range(len(s_)+1):
+                    for i in range(self.n):
                         mem_val = GdbHelper.get_memory_value(s+i, 1)
                         code_cpy.extend(self._arm_mov_to_mem(s+i, mem_val, 1))
                 # Move result to return register r0
