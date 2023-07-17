@@ -53,7 +53,7 @@ class fgets(inst_hook):
                     if len(s_) > 0:
                         for i in range(self.n-1):
                             mem = MemoryAccess(s+i, CPUSIZE.BYTE)
-                            ctx.symbolizeMemory(mem, f"0x{s+i:08x} (MODEL:fgets@libc:s+{i:d})")
+                            ctx.symbolizeMemory(mem, f"0x{s+i:08x} [MODEL:fgets@libc:s+{i:d}]")
                             if not cut or i == 0:
                                 self._logger.debug(f"\t0x{s+i:08x}=$$")
                             elif i == self.n-2:
@@ -116,7 +116,7 @@ class memcmp(inst_hook):
                 if self._mode == "taint":
                     if self._taint:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 (TAINT:memcmp@libc)")
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcmp@libc]")
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -227,11 +227,11 @@ class memcpy(inst_hook):
                             mem_addr = self.dest+i
                             mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, f"0x{mem_addr:08x} (TAINT:memcpy@libc:dest+{i:d})")
-                            self._logger.debug(f"\tdest[{i:d}] = (TAINT:memcpy@libc)")
+                            ctx.symbolizeMemory(mem, f"0x{mem_addr:08x} [TAINT:memcpy@libc:dest+{i:d}]")
+                            self._logger.debug(f"\tdest[{i:d}] = TAINT:memcpy@libc")
                     if self._taint_result:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 (TAINT:memcpy@libc)")
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcpy@libc]")
                         self._logger.debug(f"\tresult      = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -436,7 +436,7 @@ class strlen(inst_hook):
                 if self._mode == "taint":
                     if self._taint:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 (TAINT:strlen@libc)")
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strlen@libc]")
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -516,10 +516,10 @@ class strtol(inst_hook):
                         if self.endptr:
                             mem = MemoryAccess(self.endptr, CPUSIZE.DWORD)
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, f"0x{self.endptr:08x} (TAINT:strtol@libc:endptr)")
+                            ctx.symbolizeMemory(mem, f"0x{self.endptr:08x} [TAINT:strtol@libc:endptr]")
                             self._logger.debug(f"\t *endptr = [TAINTED]")
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 (TAINT:strtol@libc)")
+                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strtol@libc]")
                         self._logger.debug(f"\t  result = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
