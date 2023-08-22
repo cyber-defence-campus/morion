@@ -52,7 +52,7 @@ class Logger:
     def error(self, msg: str, color: str = 'red', on_color: str = None,
               attrs: List[str] = []) -> None:
         if self.level <= 3:
-            self._print('ERRR', msg, color, on_color=on_color, attrs=attrs, file=sys.stderr)
+            self._print('ERRO', msg, color, on_color=on_color, attrs=attrs, file=sys.stderr)
 
     def critical(self, msg: str, color: str = 'red', on_color: str = None,
                  attrs: List[str] = []) -> None:

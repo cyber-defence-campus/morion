@@ -247,10 +247,11 @@ class GdbTracer:
                 for entry_hook_fun in entry_hook_funs:
                     symbols = self._addr_mapper.get_symbols(addr)
                     symbols = ", ".join(s for s in symbols if s)
-                    logger.debug(f"--- Hook: '{symbols:s}'")
-                    logger.debug(f"---       '{entry_hook_fun.__self__.synopsis:s}'")
+                    logger.info(f"--> Hook: '{symbols:s}'")
+                    logger.info(f"          '{entry_hook_fun.__self__.synopsis:s}'")
                     for addr, opcode, disassembly, comment in entry_hook_fun():
                         self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
+                    logger.info(f"   ---")
                 
                 # Run concrete execution till return address
                 gdb.execute(f"tbreak *{hook_return_addr:d}")
@@ -262,7 +263,7 @@ class GdbTracer:
                     symbols = ", ".join(s for s in symbols if s)
                     for addr, opcode, disassembly, comment in leave_hook_fun():
                         self._recorder.add_instruction(addr, opcode, disassembly, f"// Hook: {comment:s}")
-                    logger.debug(f"--- Hook: '{symbols:s}'")
+                    logger.info(f"<-- Hook: '{symbols:s}'")
 
                 # Address was hooked
                 return True

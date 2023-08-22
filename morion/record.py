@@ -161,7 +161,7 @@ class Recorder:
         inst_opcode = " ".join(a+b for a, b in zip(inst_opcode[::2], inst_opcode[1::2]))
         self._trace["instructions"].append([inst_addr, inst_opcode, inst_disassembly, inst_comment])
         inst_line = [f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}", f"# {inst_comment:s}"]
-        self._logger.info("".join(item.ljust(80) for item in inst_line), color="cyan")
+        self._logger.debug("".join(item.ljust(80) for item in inst_line), color="cyan")
         return
 
     def get_entry_address(self) -> int:

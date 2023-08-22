@@ -23,9 +23,9 @@ class fgets(inst_hook):
                 self.s = GdbHelper.get_register_value("r0")
                 self.n = Converter.uint_to_int(GdbHelper.get_register_value("r1"))
                 self.stream = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\t s      = 0x{self.s:08x}")
-                self._logger.debug(f"\t n      = {self.n:d}")
-                self._logger.debug(f"\t stream = 0x{self.stream:08x}")
+                self._logger.info(f"\t s      = 0x{self.s:08x}")
+                self._logger.info(f"\t n      = {self.n:d}")
+                self._logger.info(f"\t stream = 0x{self.stream:08x}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -39,8 +39,8 @@ class fgets(inst_hook):
                 # Log arguments
                 s = GdbHelper.get_register_value("r0")
                 s_ = GdbHelper.get_memory_string(s)
-                self._logger.debug(f"\t s = 0x{s:08x}")
-                self._logger.debug(f"\t*s = '{s_:s}'")
+                self._logger.info(f"\t s = 0x{s:08x}")
+                self._logger.info(f"\t*s = '{s_:s}'")
                 # Move s[i]
                 code_cpy = []
                 if len(s_) > 0:
@@ -69,7 +69,7 @@ class free(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 self.ptr = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tptr = 0x{self.ptr:08x}")
+                self._logger.info(f"\tptr = 0x{self.ptr:08x}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -90,7 +90,7 @@ class malloc(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 self.size = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tsize = {self.size:d}")
+                self._logger.info(f"\tsize = {self.size:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -103,7 +103,7 @@ class malloc(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tresult = 0x{result:08x}")
+                self._logger.info(f"\tresult = 0x{result:08x}")
                 # Move result to return register r0
                 code = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
@@ -128,9 +128,9 @@ class memcmp(inst_hook):
                 self.s1 = GdbHelper.get_register_value("r0")
                 self.s2 = GdbHelper.get_register_value("r1")
                 self.n  = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\ts1 = 0x{self.s1:08x}")
-                self._logger.debug(f"\ts2 = 0x{self.s2:08x}")
-                self._logger.debug(f"\t n = {self.n:d}")
+                self._logger.info(f"\ts1 = 0x{self.s1:08x}")
+                self._logger.info(f"\ts2 = 0x{self.s2:08x}")
+                self._logger.info(f"\t n = {self.n:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -143,7 +143,7 @@ class memcmp(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -168,9 +168,9 @@ class memcpy(inst_hook):
                 self.dest = GdbHelper.get_register_value("r0")
                 self.src  = GdbHelper.get_register_value("r1")
                 self.n    = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\tdest = 0x{self.dest:08x}")
-                self._logger.debug(f"\tsrc  = 0x{self.src:08x}")
-                self._logger.debug(f"\tn    = {self.n:d}")
+                self._logger.info(f"\tdest = 0x{self.dest:08x}")
+                self._logger.info(f"\tsrc  = 0x{self.src:08x}")
+                self._logger.info(f"\tn    = {self.n:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -183,7 +183,7 @@ class memcpy(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tresult = 0x{result:08x}")
+                self._logger.info(f"\tresult = 0x{result:08x}")
                 # Move src[i] to dest[i]
                 code_cpy = []
                 for i in range(self.n):
@@ -212,8 +212,8 @@ class printf(inst_hook):
                 # Log arguments
                 self.format = GdbHelper.get_register_value("r0")
                 self.format_ = GdbHelper.get_memory_string(self.format)
-                self._logger.debug(f"\t format = 0x{self.format:08x}")
-                self._logger.debug(f"\t*format = '{self.format_:s}'")
+                self._logger.info(f"\t format = 0x{self.format:08x}")
+                self._logger.info(f"\t*format = '{self.format_:s}'")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -225,7 +225,7 @@ class printf(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -248,7 +248,7 @@ class putchar(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 self.c = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tc = 0x{self.c:02x}")
+                self._logger.info(f"\tc = 0x{self.c:02x}")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -260,7 +260,7 @@ class putchar(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -284,8 +284,8 @@ class puts(inst_hook):
                # Log arguments
                 self.s = GdbHelper.get_register_value("r0")
                 self.s_ = GdbHelper.get_memory_string(self.s)
-                self._logger.debug(f"\t s = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s = '{self.s_:s}'")
+                self._logger.info(f"\t s = 0x{self.s:08x}")
+                self._logger.info(f"\t*s = '{self.s_:s}'")
                 return super().on_entry()
         except Exception as e:
             self._logger.error(f"{self._name:s} (on=entry, mode={self._mode:s}) failed: {str(e):s}")
@@ -297,7 +297,7 @@ class puts(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -323,10 +323,10 @@ class sscanf(inst_hook):
                 self.s_ = GdbHelper.get_memory_string(self.s)
                 self.format = GdbHelper.get_register_value("r1")
                 self.format_ = GdbHelper.get_memory_string(self.format)
-                self._logger.debug(f"\t s      = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s      = '{self.s_:s}'")
-                self._logger.debug(f"\t format = 0x{self.format:08x}")
-                self._logger.debug(f"\t*format = '{self.format_:s}'")
+                self._logger.info(f"\t s      = 0x{self.s:08x}")
+                self._logger.info(f"\t*s      = '{self.s_:s}'")
+                self._logger.info(f"\t format = 0x{self.format:08x}")
+                self._logger.info(f"\t*format = '{self.format_:s}'")
                 # Parse conversion specifiers
                 format_pattern = r"""
                 (%|%([1-9][0-9]*)\$)                    # 1/2: (Numbered) argument specification
@@ -344,18 +344,18 @@ class sscanf(inst_hook):
                 if num_args >= 1:
                     arg1 = GdbHelper.get_register_value("r2")
                     self.args.append(arg1)
-                    self._logger.debug(f"\t arg1   = 0x{arg1:08x}")
+                    self._logger.info(f"\t arg1   = 0x{arg1:08x}")
                 if num_args >= 2:
                     arg2 = GdbHelper.get_register_value("r3")
                     self.args.append(arg2)
-                    self._logger.debug(f"\t arg2   = 0x{arg2:08x}")
+                    self._logger.info(f"\t arg2   = 0x{arg2:08x}")
                 # Get remaining arguments from stack
                 if num_args >= 3:
                     stack_ptr = GdbHelper.get_register_value("sp")
                     for i in range(num_args-2):
                         argi = GdbHelper.get_memory_value(stack_ptr+i*4, 4)
                         self.args.append(argi)
-                        self._logger.debug(f"\t arg{i+3:d}   = 0x{argi:08x}")
+                        self._logger.info(f"\t arg{i+3:d}   = 0x{argi:08x}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -368,7 +368,7 @@ class sscanf(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 cnt_assign = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {cnt_assign:d}")
+                self._logger.info(f"\tresult = {cnt_assign:d}")
                 
                 # Helper function to determine byte-length of an argument
                 def get_arg_length(
@@ -465,10 +465,10 @@ class strcmp(inst_hook):
                 self.s1_ = GdbHelper.get_memory_string(self.s1)
                 self.s2 = GdbHelper.get_register_value("r1")
                 self.s2_ = GdbHelper.get_memory_string(self.s2)
-                self._logger.debug(f"\t s1 = 0x{self.s1:08x}")
-                self._logger.debug(f"\t*s1 = '{self.s1_:s}'")
-                self._logger.debug(f"\t s2 = 0x{self.s2:08x}")
-                self._logger.debug(f"\t*s2 = '{self.s2_:s}'")
+                self._logger.info(f"\t s1 = 0x{self.s1:08x}")
+                self._logger.info(f"\t*s1 = '{self.s1_:s}'")
+                self._logger.info(f"\t s2 = 0x{self.s2:08x}")
+                self._logger.info(f"\t*s2 = '{self.s2_:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -481,7 +481,7 @@ class strcmp(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -508,11 +508,11 @@ class strncmp(inst_hook):
                 self.s2 = GdbHelper.get_register_value("r1")
                 self.s2_ = GdbHelper.get_memory_string(self.s2)
                 self.n = GdbHelper.get_register_value("r2")
-                self._logger.debug(f"\t s1 = 0x{self.s1:08x}")
-                self._logger.debug(f"\t*s1 = '{self.s1_:s}'")
-                self._logger.debug(f"\t s2 = 0x{self.s2:08x}")
-                self._logger.debug(f"\t*s2 = '{self.s2_:s}'")
-                self._logger.debug(f"\t  n = {self.n:d}")
+                self._logger.info(f"\t s1 = 0x{self.s1:08x}")
+                self._logger.info(f"\t*s1 = '{self.s1_:s}'")
+                self._logger.info(f"\t s2 = 0x{self.s2:08x}")
+                self._logger.info(f"\t*s2 = '{self.s2_:s}'")
+                self._logger.info(f"\t  n = {self.n:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -525,7 +525,7 @@ class strncmp(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = Converter.uint_to_int(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code  = self._arm_mov_to_reg("r0", Converter.int_to_uint(result))
                 return super().on_leave(code)
@@ -549,8 +549,8 @@ class strlen(inst_hook):
                 # Log arguments
                 self.s = GdbHelper.get_register_value("r0")
                 self.s_ = GdbHelper.get_memory_string(self.s)
-                self._logger.debug(f"\t s  = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s  = '{self.s_:s}'")
+                self._logger.info(f"\t s  = 0x{self.s:08x}")
+                self._logger.info(f"\t*s  = '{self.s_:s}'")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -563,7 +563,7 @@ class strlen(inst_hook):
             if arch in ["armv6", "armv7"]:
                 # Log arguments
                 result = GdbHelper.get_register_value("r0")
-                self._logger.debug(f"\tresult = {result:d}")
+                self._logger.info(f"\tresult = {result:d}")
                 # Move result to return register r0
                 code = self._arm_mov_to_reg("r0", result)
                 return super().on_leave(code)
@@ -589,10 +589,10 @@ class strtol(inst_hook):
                 self.nptr_  = GdbHelper.get_memory_string(self.nptr)
                 self.endptr = GdbHelper.get_register_value("r1")
                 self.base   = Converter.uint_to_int(GdbHelper.get_register_value("r2"))
-                self._logger.debug(f"\t nptr   = 0x{self.nptr:08x}")
-                self._logger.debug(f"\t*nptr   = '{self.nptr_:s}'")
-                self._logger.debug(f"\t endptr = 0x{self.endptr:08x}")
-                self._logger.debug(f"\t base   = {self.base:d}")
+                self._logger.info(f"\t nptr   = 0x{self.nptr:08x}")
+                self._logger.info(f"\t*nptr   = '{self.nptr_:s}'")
+                self._logger.info(f"\t endptr = 0x{self.endptr:08x}")
+                self._logger.info(f"\t base   = {self.base:d}")
                 return super().on_entry()
             raise Exception(f"Architecture '{arch:s}' not supported.")
         except Exception as e:
@@ -607,9 +607,9 @@ class strtol(inst_hook):
                 endptr_ = GdbHelper.get_memory_value(self.endptr, 4)
                 endptr__ = GdbHelper.get_memory_string(endptr_)
                 result   = Converter.ulong_to_long(GdbHelper.get_register_value("r0"))
-                self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
-                self._logger.debug(f"\t**endptr = '{endptr__:s}'")
-                self._logger.debug(f"\t  result = {result:d}")
+                self._logger.info(f"\t *endptr = 0x{endptr_:08x}")
+                self._logger.info(f"\t**endptr = '{endptr__:s}'")
+                self._logger.info(f"\t  result = {result:d}")
                 # Move *endptr to memory endptr
                 code_endptr = self._arm_mov_to_mem(self.endptr, endptr_)
                 # Move result to return register r0
