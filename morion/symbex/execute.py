@@ -280,12 +280,13 @@ class Executor:
                 hook_symbols = self._addr_mapper.get_symbols(pc)
                 hook_symbols = ", ".join(s for s in hook_symbols if s)
                 if hook_return_addr is not None:
-                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
-                    self._logger.debug(f"---       '{hook_fun.__self__.synopsis:s}'")
+                    self._logger.debug(f"--> Hook: '{hook_symbols:s}'")
+                    self._logger.debug(f"          '{hook_fun.__self__.synopsis:s}'")
                     inside_hook = True
                 hook_fun(self.ctx)
+                self._logger.debug(f"    ---")
                 if hook_return_addr is None and inside_hook:
-                    self._logger.debug(f"--- Hook: '{hook_symbols:s}'")
+                    self._logger.debug(f"<-- Hook: '{hook_symbols:s}'")
                     inside_hook = False
 
             # Symbolic execution
