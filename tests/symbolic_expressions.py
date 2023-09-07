@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from triton import ARCH, CPUSIZE, Instruction, MemoryAccess, MODE, TritonContext
+from morion.help           import Alias
+from triton                import ARCH, CPUSIZE, MemoryAccess, TritonContext
 
 ctx = TritonContext(ARCH.ARM32)
 
@@ -24,34 +25,34 @@ def print_model(mem_addr, mem_size, value):
     for sym_var_id, solver_model in model:
         sym_var = ctx.getSymbolicVariable(sym_var_id)
         sym_var_size = sym_var.getBitSize() / 8
-        sym_var_alias = sym_var.getAlias()
+        _, _, sym_var_info = Alias.parse(sym_var.getAlias())
         sym_var_value = solver_model.getValue()
         if sym_var_size == CPUSIZE.BYTE:
-            print(f"[{sym_var_id}, {sym_var_alias}] 0x{mem_addr:x}: 0x{sym_var_value:02x}")
+            print(f"[{sym_var_id}, {sym_var_info}] 0x{mem_addr:x}: 0x{sym_var_value:02x}")
             mem_addr += CPUSIZE.BYTE
         elif sym_var_size == CPUSIZE.WORD:
-            print(f"[{sym_var_id}, {sym_var_alias}] 0x{mem_addr:x}: 0x{sym_var_value:04x}")
+            print(f"[{sym_var_id}, {sym_var_info}] 0x{mem_addr:x}: 0x{sym_var_value:04x}")
             mem_addr += CPUSIZE.WORD
         elif sym_var_size == CPUSIZE.DWORD:
-            print(f"[{sym_var_id}, {sym_var_alias}] 0x{mem_addr:x}: 0x{sym_var_value:08x}")
+            print(f"[{sym_var_id}, {sym_var_info}] 0x{mem_addr:x}: 0x{sym_var_value:08x}")
             mem_addr += CPUSIZE.DWORD
         elif sym_var_size == CPUSIZE.QWORD:
-            print(f"[{sym_var_id}, {sym_var_alias}] 0x{mem_addr:x}: 0x{sym_var_value:016x}")
+            print(f"[{sym_var_id}, {sym_var_info}] 0x{mem_addr:x}: 0x{sym_var_value:016x}")
             mem_addr += CPUSIZE.QWORD
     print(f"\n")
 
 # Single-Byte Symbolic Variables
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), "mem1_0")
-ctx.symbolizeMemory(MemoryAccess(0x1001, CPUSIZE.BYTE), "mem1_1")
-ctx.symbolizeMemory(MemoryAccess(0x1002, CPUSIZE.BYTE), "mem1_2")
-ctx.symbolizeMemory(MemoryAccess(0x1003, CPUSIZE.BYTE), "mem1_3")
-ctx.symbolizeMemory(MemoryAccess(0x1004, CPUSIZE.BYTE), "mem1_4")
-ctx.symbolizeMemory(MemoryAccess(0x1005, CPUSIZE.BYTE), "mem1_5")
-ctx.symbolizeMemory(MemoryAccess(0x1006, CPUSIZE.BYTE), "mem1_6")
-ctx.symbolizeMemory(MemoryAccess(0x1007, CPUSIZE.BYTE), "mem1_7")
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1000, info="mem1_0"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1001, info="mem1_1"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1002, info="mem1_2"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1003, info="mem1_3"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1004, info="mem1_4"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1005, info="mem1_5"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1006, info="mem1_6"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1007, info="mem1_7"))
 
 # Multi-Byte Symbolic Variables
-ctx.symbolizeMemory(MemoryAccess(0x2000, CPUSIZE.QWORD), "mem2__")
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x2000, info="mem2__"))
 
 # Evaluate different models
 print_model(0x1000, CPUSIZE.QWORD, 0x4041424344454647)
