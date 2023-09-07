@@ -97,6 +97,9 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="run without requesting the user for inputs")
+    parser.add_argument("--skip_state_analysis",
+                        action="store_true",
+                        help="skip analyzing the symbolic state at the end of the execution")
     args = vars(parser.parse_args())
 
     reg_name = args.get("reg_name")
