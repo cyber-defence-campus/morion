@@ -5,7 +5,6 @@ import importlib
 import inspect
 import os
 import pkgutil
-import string
 import sys
 from   morion.interact                      import Shell
 from   morion.log                           import Logger
@@ -13,44 +12,10 @@ from   morion.map                           import AddressMapper
 from   morion.record                        import Recorder
 from   morion.symbex                        import hooking
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
+from   morion.symbex.help                   import SymbexHelper
 from   triton                               import ARCH, AST_REPRESENTATION, CPUSIZE, EXCEPTION, Instruction
 from   triton                               import MemoryAccess, MODE, TritonContext
 from   typing                               import List
-
-
-class Helper:
-
-    # @staticmethod
-    # def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
-    #     s = ""
-    #     addr = mem_addr
-    #     while True:
-    #         value = ctx.getConcreteMemoryValue(addr)
-    #         char = chr(value)
-    #         if char not in string.printable: char = ""
-    #         s += char
-    #         if not value: break
-    #         addr += CPUSIZE.BYTE
-    #     return s
-    
-    @staticmethod
-    def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
-        s = ""
-        if not mem_addr: return s
-        while True:
-            # Examine byte at address `mem_addr`
-            c = ctx.getConcreteMemoryValue(mem_addr)
-            # Terminate at a null byte
-            if c == 0:
-                break
-            # Decode value to UTF-8 string
-            c = bytes.fromhex(f"{c:02x}")
-            c = c.decode("utf-8", errors="replace")
-            # Step towards next null byte
-            s += c
-            mem_addr += 1
-        return s
-
 
 class Executor:
     """
@@ -119,7 +84,7 @@ class Executor:
                 reg = self.ctx.getRegister(reg_name)
                 if not isinstance(reg_values, list): reg_values = [reg_values]
                 if "$$" in reg_values:
-                    self.ctx.symbolizeRegister(reg, reg_name)
+                    self.ctx.symbolizeRegister(reg, SymbexHelper.create_symvar_alias(reg_name=reg_name))
                     self._logger.debug(f"\t{reg_name:s}=$$")
             except:
                 continue
@@ -132,7 +97,7 @@ class Executor:
                 if not isinstance(mem_values, list): mem_values = [mem_values]                
                 if "$$" in mem_values:
                     mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
-                    self.ctx.symbolizeMemory(mem, f"0x{mem_addr:x}")
+                    self.ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=mem_addr))
                     self._logger.debug(f"\t0x{mem_addr:08x}=$$")
             except:
                 continue
@@ -217,6 +182,22 @@ class Executor:
             mem_val = self.ctx.getConcreteMemoryValue(mem)
             byte_mask = self._is_controllable(mem_ast, mem_val, mem_size)
         return byte_mask
+    
+    def _hook(self, addr: int) -> None:
+        hook_funs, hook_return_addr = self._addr_mapper.get_hooks(addr)
+        for hook_fun in hook_funs:
+            hook_symbols = self._addr_mapper.get_symbols(addr)
+            hook_symbols = ", ".join(s for s in hook_symbols if s)
+            if hook_return_addr is not None:
+                self._logger.debug(f"--> Hook: '{hook_symbols:s}'")
+                self._logger.debug(f"          '{hook_fun.__self__.synopsis:s}'")
+                self.inside_hook = True
+            hook_fun(self.ctx)
+            self._logger.debug(f"    ---")
+            if hook_return_addr is None and self.inside_hook:
+                self._logger.debug(f"<-- Hook: '{hook_symbols:s}'")
+                self.inside_hook = False
+        return
 
     def _step(self, addr: int, opcode: bytes, disassembly: str, comment: str = None) -> bool:
         try:
@@ -233,6 +214,9 @@ class Executor:
             # Build instruction semantics
             is_supported = self.ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
 
+            # Increment instruction counter
+            SymbexHelper.inst_cnt += 1
+
             # Log instruction
             inst_addr = f"0x{addr:08x}"
             inst_opcode = opcode.hex()
@@ -244,29 +228,30 @@ class Executor:
             for post_processing_function in self._post_processing_functions:
                 post_processing_function(self.ctx, inst, self._logger, "POST")
         except Exception as e:
-            self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x} {disassembly:s}': {str(e):s}")
+            self._logger.error(f"Failed to symbolically execute instruction '0x{addr:x}: {disassembly:s}': {str(e):s}")
             return False
         return is_supported
         
-    def run(self, args: dict = {}) -> None:
+    def run(self, args: dict = {}, exe_last_inst: bool = True) -> None:
         # Initialization
         self.stepping = args.get("stepping", False)
         VulnerabilityAnalysis.disallow_user_inputs = args.get("disallow_user_inputs", True)
         VulnerabilityAnalysis.analysis_history = {}
-        inside_hook = False
+        self.inside_hook = False
 
         # Symbolic execution
         self._logger.info(f"Start symbolic execution...")
         pc = self._recorder.get_entry_address()
         stop_addr = self._recorder.get_leave_address()
-        insts = self._recorder.get_instructions()
+        insts = self._recorder.get_instructions().copy()
+        if not exe_last_inst: insts.pop()
         for addr, opcode, disassembly, comment in insts:
             # Parse instruction address and opcode
             try:
                 addr = int(addr, base=16)
                 opcode = bytes.fromhex(opcode.replace(" ", ""))
             except:
-                self._logger.error(f"Failed to retrieve instruction.")
+                self._logger.error("Failed to parse instruction address and/or opcode.")
                 break
 
             # Validate trace synchronization
@@ -274,20 +259,8 @@ class Executor:
                 self._logger.error(f"Trace desynchronized: CON.PC 0x{addr:08x} != 0x{pc:08x} SYM.PC")
                 break
 
-            # Execute hook functions
-            hook_funs, hook_return_addr = self._addr_mapper.get_hooks(pc)
-            for hook_fun in hook_funs:
-                hook_symbols = self._addr_mapper.get_symbols(pc)
-                hook_symbols = ", ".join(s for s in hook_symbols if s)
-                if hook_return_addr is not None:
-                    self._logger.debug(f"--> Hook: '{hook_symbols:s}'")
-                    self._logger.debug(f"          '{hook_fun.__self__.synopsis:s}'")
-                    inside_hook = True
-                hook_fun(self.ctx)
-                self._logger.debug(f"    ---")
-                if hook_return_addr is None and inside_hook:
-                    self._logger.debug(f"<-- Hook: '{hook_symbols:s}'")
-                    inside_hook = False
+            # Execute potential hooks
+            self._hook(pc)
 
             # Symbolic execution
             if not self._step(pc, opcode, disassembly, comment): break
@@ -302,7 +275,9 @@ class Executor:
             self._logger.error(f"Not terminated at a stop address: pc=0x{pc:08x}")
         self._logger.info(f"... finished symbolic execution (pc=0x{pc:08x}).")
 
-        # Symbolic state
+        # Analyze symbolic state
+        self.skip_state_analysis = args.get("skip_state_analysis", False)
+        if self.skip_state_analysis: return
         self._logger.info("Start analyzing symbolic state...")
         self._logger.info("Symbolic Regs:", color="magenta")
         reg_names = set()
@@ -369,12 +344,31 @@ class Executor:
                 self._logger.info(f"\t0x{mem_addr2:08x}={mem_mask2:s}", color="magenta")
 
         self._logger.info("... finished analyzing symbolic state.")
+        return
 
     def store(self, trace_file: str) -> None:
         self._logger.info(f"Start storing file '{trace_file:s}'...")
         self._recorder.store(trace_file)
         self._logger.info(f"... finished storing file '{trace_file:s}'.")
         return
+
+    @staticmethod
+    def get_memory_string(ctx: TritonContext, mem_addr: int) -> str:
+        s = ""
+        if not mem_addr: return s
+        while True:
+            # Examine byte at address `mem_addr`
+            c = ctx.getConcreteMemoryValue(mem_addr)
+            # Terminate at a null byte
+            if c == 0:
+                break
+            # Decode value to UTF-8 string
+            c = bytes.fromhex(f"{c:02x}")
+            c = c.decode("utf-8", errors="replace")
+            # Step towards next null byte
+            s += c
+            mem_addr += 1
+        return s
 
 
 def main() -> None:
@@ -396,6 +390,9 @@ def main() -> None:
     parser.add_argument("--disallow_user_inputs",
                         action="store_true",
                         help="run without requesting the user for inputs")
+    parser.add_argument("--skip_state_analysis",
+                        action="store_true",
+                        help="skip analyzing the symbolic state at the end of the execution")
     args = vars(parser.parse_args())
 
     # Symbolic execution

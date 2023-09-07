@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from    morion.help               import Converter
-from    morion.log                import Logger
-from    morion.symbex.execute     import Helper
-from    morion.symbex.hooking.lib import inst_hook
-from    triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
-import  re
+from   morion.help               import Converter
+from   morion.log                import Logger
+from   morion.symbex.execute     import Executor
+from   morion.symbex.help        import SymbexHelper
+from   morion.symbex.hooking.lib import inst_hook
+from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
+import re
 
 
 class fgets(inst_hook):
@@ -41,7 +42,7 @@ class fgets(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                s_ = Helper.get_memory_string(ctx, s)
+                s_ = Executor.get_memory_string(ctx, s)
                 self._logger.debug(f"\t s = 0x{s:08x}")
                 self._logger.debug(f"\t*s = '{s_:s}'")
                 # TODO: Taint mode
@@ -53,7 +54,7 @@ class fgets(inst_hook):
                     if len(s_) > 0:
                         for i in range(self.n-1):
                             mem = MemoryAccess(s+i, CPUSIZE.BYTE)
-                            ctx.symbolizeMemory(mem, f"0x{s+i:08x} [MODEL:fgets@libc:s+{i:d}]")
+                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=s+i, info=f"MODEL:fgets@libc:s+{i:d}"))
                             if not cut or i == 0:
                                 self._logger.debug(f"\t0x{s+i:08x}=$$")
                             elif i == self.n-2:
@@ -116,7 +117,7 @@ class memcmp(inst_hook):
                 if self._mode == "taint":
                     if self._taint:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcmp@libc]")
+                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:memcmp@libc"))
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -227,11 +228,11 @@ class memcpy(inst_hook):
                             mem_addr = self.dest+i
                             mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, f"0x{mem_addr:08x} [TAINT:memcpy@libc:dest+{i:d}]")
+                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=mem_addr, info=f"TAINT:memcpy@libc:dest+{i:d}"))
                             self._logger.debug(f"\tdest[{i:d}] = TAINT:memcpy@libc")
                     if self._taint_result:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:memcpy@libc]")
+                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:memcpy@libc"))
                         self._logger.debug(f"\tresult      = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -260,7 +261,7 @@ class puts(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.s_ = Helper.get_memory_string(ctx, self.s)
+                self.s_ = Executor.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
                 self._logger.debug(f"\t*s = '{self.s_:s}'")
                 return
@@ -283,9 +284,9 @@ class sscanf(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.s_ = Helper.get_memory_string(ctx, self.s)
+                self.s_ = Executor.get_memory_string(ctx, self.s)
                 self.format = ctx.getConcreteRegisterValue(ctx.registers.r1)
-                self.format_ = Helper.get_memory_string(ctx, self.format)
+                self.format_ = Executor.get_memory_string(ctx, self.format)
                 self._logger.debug(f"\t s      = 0x{self.s:08x}")
                 self._logger.debug(f"\t*s      = '{self.s_:s}'")
                 self._logger.debug(f"\t format = 0x{self.format:08x}")
@@ -358,7 +359,7 @@ class sscanf(inst_hook):
                         # Conversion specifier s (currently no support for length modifier l)
                         if con_spe == 's' and lth_mod != 'l':
                             # Parse string
-                            inp_str = Helper.get_memory_string(ctx, s)
+                            inp_str = Executor.get_memory_string(ctx, s)
                             m = re.search(r"([^\s]+)", inp_str)
                             if m is None or len(m.groups()) != 1:
                                 self._logger.warning(f"Failed to apply conversion specifier 's' to '{inp_str:s}'")
@@ -405,7 +406,7 @@ class strlen(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.s_ = Helper.get_memory_string(ctx, self.s)
+                self.s_ = Executor.get_memory_string(ctx, self.s)
                 self._logger.debug(f"\t s = 0x{self.s:08x}")
                 self._logger.debug(f"\t*s = '{self.s_:s}'")
                 # Taint mode
@@ -436,7 +437,7 @@ class strlen(inst_hook):
                 if self._mode == "taint":
                     if self._taint:
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strlen@libc]")
+                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:strlen@libc"))
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -472,7 +473,7 @@ class strtol(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 self.nptr = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.nptr_ = Helper.get_memory_string(ctx, self.nptr)
+                self.nptr_ = Executor.get_memory_string(ctx, self.nptr)
                 self.endptr = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.base = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r2))
                 self._logger.debug(f"\t  nptr   = 0x{self.nptr:08x}")
@@ -505,7 +506,7 @@ class strtol(inst_hook):
             if arch == ARCH.ARM32:
                 # Log arguments
                 endptr_ = ctx.getConcreteMemoryValue(MemoryAccess(self.endptr, CPUSIZE.DWORD))
-                endptr__ = Helper.get_memory_string(ctx, endptr_)
+                endptr__ = Executor.get_memory_string(ctx, endptr_)
                 result = Converter.ulong_to_long(ctx.getConcreteRegisterValue(ctx.registers.r0))
                 self._logger.debug(f"\t *endptr = 0x{endptr_:08x}")
                 self._logger.debug(f"\t**endptr = '{endptr__:s}'")
@@ -516,10 +517,10 @@ class strtol(inst_hook):
                         if self.endptr:
                             mem = MemoryAccess(self.endptr, CPUSIZE.DWORD)
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, f"0x{self.endptr:08x} [TAINT:strtol@libc:endptr]")
+                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=self.endptr, info="TAINT:strtol@libc:endptr"))
                             self._logger.debug(f"\t *endptr = [TAINTED]")
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, "r0 [TAINT:strtol@libc]")
+                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:strtol@libc"))
                         self._logger.debug(f"\t  result = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
