@@ -12,14 +12,14 @@ setup(
     ],
     entry_points = {
         'console_scripts': [
-            'morion=morion.symbex.execute:main',
+            'morion=morion.symbex.tools.execute:main',
             'morion_pwndbg=morion.pwndbg:main',
-            'morion_backward_slicer=morion.symbex.backward_slice:main',
-            'morion_control_hijacker=morion.symbex.hijack_control:main',
-            'morion_memory_hijacker=morion.symbex.hijack_memory:main',
-            'morion_branch_analyzer=morion.symbex.analyse_branches:main',
-            'morion_path_analyzer=morion.symbex.analyse_paths:main',
-            'morion_rop_generator=morion.symbex.generate_rop:main'
+            'morion_backward_slicer=morion.symbex.tools.backward_slice:main',
+            'morion_control_hijacker=morion.symbex.tools.hijack_control:main',
+            'morion_memory_hijacker=morion.symbex.tools.hijack_memory:main',
+            'morion_branch_analyzer=morion.symbex.tools.analyse_branches:main',
+            'morion_path_analyzer=morion.symbex.tools.analyse_paths:main',
+            'morion_rop_generator=morion.symbex.tools.generate_rop:main'
         ]
     }
 )

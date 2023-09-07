@@ -2,7 +2,7 @@
 ## -*- coding: utf-8 -*-
 import argparse
 from   morion.log                           import Logger
-from   morion.symbex.execute                import Executor
+from   morion.symbex.tools.execute          import Executor
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 

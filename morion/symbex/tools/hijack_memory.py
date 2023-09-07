@@ -2,21 +2,25 @@
 ## -*- coding: utf-8 -*-
 import argparse
 from   morion.log                           import Logger
-from   morion.symbex.execute                import Executor
+from   morion.symbex.tools.execute          import Executor
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
-class ControlHijacker(Executor):
+class MemoryHijacker(Executor):
 
     def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
+        # Set pre-processing functions
+        self._pre_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_reads)
         # Set post-processing functions
-        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_flows)
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_memory_writes)
         # Run symbolic execution
         super().run(args)
+        # Remove pre-processing functions
+        self._pre_processing_functions.pop()
         # Remove post-processing functions
         self._post_processing_functions.pop()
         # Restore symbolic execution mode
@@ -27,10 +31,10 @@ class ControlHijacker(Executor):
 def main() -> None:
     # Argument parsing
     description = """Symbolically execute a program trace to identify potential
-    control flow hijacks.
+    memory hijacks.
 
-    A control flow hijack corresponds to registers, influencing the control flow
-    (such as PC), becoming (partly) symbolic.
+    A memory hijack corresponds to the target of a memory read or write
+    operation being (partly) symbolic.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -52,7 +56,7 @@ def main() -> None:
     args = vars(parser.parse_args())
 
     # Symbolic Execution
-    se = ControlHijacker(Logger(args["log_level"]))
+    se = MemoryHijacker(Logger(args["log_level"]))
     se.load(args["trace_file"])
     se.run(args)
     se.store(args["trace_file"])

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from   morion.help               import Converter
-from   morion.log                import Logger
-from   morion.symbex.execute     import Executor
-from   morion.symbex.help        import SymbexHelper
-from   morion.symbex.hooking.lib import inst_hook
-from   triton                    import ARCH, CPUSIZE, MemoryAccess, TritonContext
+from   morion.help                 import Converter
+from   morion.log                  import Logger
+from   morion.symbex.tools.execute import Executor
+from   morion.symbex.help          import SymbexHelper
+from   morion.symbex.hooking.lib   import inst_hook
+from   triton                      import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
 
 

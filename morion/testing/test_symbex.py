@@ -3,8 +3,8 @@
 import unittest
 import tempfile
 import yaml
-from   morion.log            import Logger
-from   morion.symbex.execute import Executor
+from   morion.log                  import Logger
+from   morion.symbex.tools.execute import Executor
 
 
 class TestSymbex(unittest.TestCase):

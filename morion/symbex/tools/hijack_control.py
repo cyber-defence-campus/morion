@@ -2,31 +2,23 @@
 ## -*- coding: utf-8 -*-
 import argparse
 from   morion.log                           import Logger
-from   morion.symbex.execute                import Executor
+from   morion.symbex.tools.execute          import Executor
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
-class BranchAnalyzer(Executor):
+class ControlHijacker(Executor):
 
     def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
         # Set post-processing functions
-        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_branches)
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_flows)
         # Run symbolic execution
         super().run(args)
         # Remove post-processing functions
         self._post_processing_functions.pop()
-        # Log branch analysis summary
-        self._logger.info(f"Summarizing branch analysis...")
-        for branch, model_summary in VulnerabilityAnalysis.analysis_history.items():
-            self._logger.info(f"\t{branch:s}", color="magenta")
-            for line in model_summary:
-                self._logger.info(f"\t\t{line:s}", color="magenta")
-        branch_count = len(VulnerabilityAnalysis.analysis_history)
-        self._logger.info(f"... a total of {branch_count:d} new branch(es) identified.")
         # Restore symbolic execution mode
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, self._only_on_symbolized)
         return
@@ -34,11 +26,11 @@ class BranchAnalyzer(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """Symbolically execute a program trace for branch analysis.
+    description = """Symbolically execute a program trace to identify potential
+    control flow hijacks.
 
-    The analysis identifies multiway branches along the trace and outputs
-    concrete values of how to reach the non-taken branch. A specific branch is
-    only evaluated once.
+    A control flow hijack corresponds to registers, influencing the control flow
+    (such as PC), becoming (partly) symbolic.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -60,7 +52,7 @@ def main() -> None:
     args = vars(parser.parse_args())
 
     # Symbolic Execution
-    se = BranchAnalyzer(Logger(args["log_level"]))
+    se = ControlHijacker(Logger(args["log_level"]))
     se.load(args["trace_file"])
     se.run(args)
     se.store(args["trace_file"])

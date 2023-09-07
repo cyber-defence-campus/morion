@@ -2,33 +2,31 @@
 ## -*- coding: utf-8 -*-
 import argparse
 from   morion.log                           import Logger
-from   morion.symbex.execute                import Executor
+from   morion.symbex.tools.execute          import Executor
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   triton                               import MODE
 
 
-class PathAnalyzer(Executor):
+class BranchAnalyzer(Executor):
 
     def run(self, args: dict = {}) -> None:
         # Set symbolic execution mode
         self._only_on_symbolized = self.ctx.isModeEnabled(MODE.ONLY_ON_SYMBOLIZED)
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, True)
         # Set post-processing functions
-        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_paths)
+        self._post_processing_functions.append(VulnerabilityAnalysis.identify_controllable_branches)
         # Run symbolic execution
         super().run(args)
         # Remove post-processing functions
         self._post_processing_functions.pop()
-        # Log path analysis summary
-        self._logger.info(f"Summarizing path analysis...")
-        for i, (path, model_summary) in enumerate(VulnerabilityAnalysis.analysis_history.items()):
-            self._logger.info(f"\tPath {i:d}: {path:s}:", color="magenta")
-            self._logger.info(f"\tState:", color="magenta")
-            model_summary.sort()
+        # Log branch analysis summary
+        self._logger.info(f"Summarizing branch analysis...")
+        for branch, model_summary in VulnerabilityAnalysis.analysis_history.items():
+            self._logger.info(f"\t{branch:s}", color="magenta")
             for line in model_summary:
                 self._logger.info(f"\t\t{line:s}", color="magenta")
-        path_count = len(VulnerabilityAnalysis.analysis_history)
-        self._logger.info(f"... a total of {path_count:d} new path(s) identified.")
+        branch_count = len(VulnerabilityAnalysis.analysis_history)
+        self._logger.info(f"... a total of {branch_count:d} new branch(es) identified.")
         # Restore symbolic execution mode
         self.ctx.setMode(MODE.ONLY_ON_SYMBOLIZED, self._only_on_symbolized)
         return
@@ -36,12 +34,11 @@ class PathAnalyzer(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """Symbolically execute a program trace for path analysis.
+    description = """Symbolically execute a program trace for branch analysis.
 
-    The analysis identifies unique paths along the trace and outputs concrete
-    values of how to reach these paths. A path consists of a sequence of
-    multiway branches. The last multiway branch in each outputted path is non-
-    taken in the concrete execution of the trace.
+    The analysis identifies multiway branches along the trace and outputs
+    concrete values of how to reach the non-taken branch. A specific branch is
+    only evaluated once.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -63,7 +60,7 @@ def main() -> None:
     args = vars(parser.parse_args())
 
     # Symbolic Execution
-    se = PathAnalyzer(Logger(args["log_level"]))
+    se = BranchAnalyzer(Logger(args["log_level"]))
     se.load(args["trace_file"])
     se.run(args)
     se.store(args["trace_file"])
