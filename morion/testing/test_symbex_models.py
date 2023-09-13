@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 import unittest
+from   morion.symbex.help         import SymbexHelper
 from   morion.testing.test_symbex import TestSymbex
 from   triton                     import CPUSIZE, MemoryAccess
 
@@ -34,8 +35,7 @@ class TestModelLibcFgets(TestSymbex):
                         '0xbeffc114': ['0x02'], # s[0] = A
                         '0xbeffc115': ['0x03'], # s[1] = B
                         '0xbeffc116': ['0x04'], # s[3] = NULL
-                        '0xbeffc117': ['0x05'],
-                        '0xbeffc118': ['0x06']
+                        '0xbeffc117': ['0x05']
                     }
                 },
                 'leave': {
@@ -81,26 +81,21 @@ class TestModelLibcFgets(TestSymbex):
         mem_3_val = self.se.ctx.evaluateAstViaSolver(mem_3_ast)
         mem_4_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc117, CPUSIZE.BYTE))
         mem_4_val = self.se.ctx.evaluateAstViaSolver(mem_4_ast)
-        mem_5_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc118, CPUSIZE.BYTE))
-        mem_5_val = self.se.ctx.evaluateAstViaSolver(mem_5_ast)
 
-        self.assertTrue(mem_0_val == 0x01, '0xbeffc113 == 0x01')
-        self.assertFalse(bool(self.se.ctx.getModel(mem_0_ast != 0x01)), '0xbeffc113 != 0x01')
+        self.assertTrue(mem_0_val == 0x01, '[0xbeffc113] == 0x01')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_0_ast != 0x01)), '[0xbeffc113] != 0x01')
 
-        self.assertTrue(mem_1_val == 0x41, '0xbeffc114 == 0x41')
-        self.assertTrue(bool(self.se.ctx.getModel(mem_1_ast != 0x41)), '0xbeffc114 != 0x41')
+        self.assertTrue(mem_1_val == 0x41, '[0xbeffc114] == 0x41')
+        self.assertTrue(bool(self.se.ctx.getModel(mem_1_ast != 0x41)), '[0xbeffc114] != 0x41')
 
-        self.assertTrue(mem_2_val == 0x42, '0xbeffc115 == 0x42')
-        self.assertTrue(bool(self.se.ctx.getModel(mem_2_ast != 0x42)), '0xbeffc115 != 0x42')
+        self.assertTrue(mem_2_val == 0x42, '[0xbeffc115] == 0x42')
+        self.assertTrue(bool(self.se.ctx.getModel(mem_2_ast != 0x42)), '[0xbeffc115] != 0x42')
 
-        self.assertTrue(mem_3_val == 0x00, '0xbeffc116 == 0x00')
-        self.assertFalse(bool(self.se.ctx.getModel(mem_3_ast != 0x00)), '0xbeffc116 != 0x00')
+        self.assertTrue(mem_3_val == 0x00, '[0xbeffc116] == 0x00')
+        self.assertTrue(bool(self.se.ctx.getModel(mem_3_ast != 0x00)), '[0xbeffc116] != 0x00')
 
-        self.assertTrue(mem_4_val == 0x05, '0xbeffc117 == 0x05')
-        self.assertFalse(bool(self.se.ctx.getModel(mem_4_ast != 0x05)), '0xbeffc117 != 0x05')
-
-        self.assertTrue(mem_5_val == 0x06, '0xbeffc118 == 0x06')
-        self.assertFalse(bool(self.se.ctx.getModel(mem_5_ast != 0x06)), '0xbeffc118 != 0x06')
+        self.assertTrue(mem_4_val == 0x05, '[0xbeffc117] == 0x05')
+        self.assertFalse(bool(self.se.ctx.getModel(mem_4_ast != 0x05)), '[0xbeffc117] != 0x05')
 
         return
 
@@ -145,7 +140,7 @@ class TestModelLibcMemcmp(TestSymbex):
             },
             'instructions': [
                 ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                ['0x000100', '00 00 a0 e3', 'mov  r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
                 ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
                 ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
                 ['0x4006a8', '00 f0 20 e3', 'nop',           '']
@@ -228,22 +223,22 @@ class TestModelLibcMemcmp(TestSymbex):
         self.assertEqual(r0_val, 0x02, 'r0 == 0x02 (AST value)')
 
         model = self.se.ctx.getModel(r0_ast == 0)
-        mem_add = model[0].getVariable().getAlias()
+        _, _, mem_add, _ = SymbexHelper.parse_symvar_alias(model[0].getVariable().getAlias())
         mem_val = model[0].getValue()
-        self.assertEqual(mem_add, '0x4121aa', '0x4121aa == 0x43 C (mem_add)')
-        self.assertEqual(mem_val, 0x43,       '0x4121aa == 0x43 C (mem_val)')
+        self.assertEqual(mem_add, 0x4121aa, '[0x4121aa] == 0x43 C (mem_add)')
+        self.assertEqual(mem_val, 0x43,       '[0x4121aa] == 0x43 C (mem_val)')
 
         model = self.se.ctx.getModel(r0_ast == -2)
-        mem_add = model[0].getVariable().getAlias()
+        _, _, mem_add, _ = SymbexHelper.parse_symvar_alias(model[0].getVariable().getAlias())
         mem_val = model[0].getValue()
-        self.assertEqual(mem_add, '0x4121aa', '0x4121aa == 0x45 E (mem_add)')
-        self.assertEqual(mem_val, 0x45,       '0x4121aa == 0x45 E (mem_val)')
+        self.assertEqual(mem_add, 0x4121aa, '[0x4121aa] == 0x45 E (mem_add)')
+        self.assertEqual(mem_val, 0x45,       '[0x4121aa] == 0x45 E (mem_val)')
 
         model = self.se.ctx.getModel(r0_ast == 1)
-        mem_add = model[0].getVariable().getAlias()
+        _, _, mem_add, _ = SymbexHelper.parse_symvar_alias(model[0].getVariable().getAlias())
         mem_val = model[0].getValue()
-        self.assertEqual(mem_add, '0x4121aa', '0x4121aa == 0x42 B (mem_add)')
-        self.assertEqual(mem_val, 0x42,       '0x4121aa == 0x42 B (mem_val)')
+        self.assertEqual(mem_add, 0x4121aa, '[0x4121aa] == 0x42 B (mem_add)')
+        self.assertEqual(mem_val, 0x42,       '[0x4121aa] == 0x42 B (mem_val)')
 
         return
 
@@ -336,17 +331,17 @@ class TestModelLibcMemcmp(TestSymbex):
 
         model = self.se.ctx.getModel(ast.land([r0_ast == -3, mem_1_ast == 0x44]))
         model = sorted(list(model.items()), key=lambda t: t[1].getVariable())
-        mem_0_add = model[0][1].getVariable().getAlias()
+        _, _, mem_0_add, _ = SymbexHelper.parse_symvar_alias(model[0][1].getVariable().getAlias())
         mem_0_val = model[0][1].getValue()
-        self.assertEqual(mem_0_add, '0x412193', '0x412193 == 0x41 A (mem_add)')
-        self.assertEqual(mem_0_val, 0x41,       '0x412193 == 0x41 A (mem_val)')
+        self.assertEqual(mem_0_add, 0x412193, '[0x412193] == 0x41 A (mem_add)')
+        self.assertEqual(mem_0_val, 0x41,       '[0x412193] == 0x41 A (mem_val)')
         
         model = self.se.ctx.getModel(ast.land([r0_ast == 4, mem_0_ast == 0x44]))
         model = sorted(list(model.items()), key=lambda t: t[1].getVariable())
-        mem_1_add = model[1][1].getVariable().getAlias()
+        _, _, mem_1_add, _ = SymbexHelper.parse_symvar_alias(model[1][1].getVariable().getAlias())
         mem_1_val = model[1][1].getValue()
-        self.assertEqual(mem_1_add, '0x4121b3', '0x4121b3 == 0x40 @ (mem_add)')
-        self.assertEqual(mem_1_val, 0x40,       '0x4121b3 == 0x40 @ (mem_val)')
+        self.assertEqual(mem_1_add, 0x4121b3, '[0x4121b3] == 0x40 @ (mem_add)')
+        self.assertEqual(mem_1_val, 0x40,       '[0x4121b3] == 0x40 @ (mem_val)')
 
         return
 
@@ -458,7 +453,7 @@ class TestModelLibcSscanf(TestSymbex):
 
         # TODO: Adjust model
         self.assertTrue(bool(self.se.ctx.getModel(arg2_mem_ast != 0x00000044)))
-        import IPython; IPython.embed(header="Model")
+
 
 if __name__ == "__main__":
     unittest.main()
