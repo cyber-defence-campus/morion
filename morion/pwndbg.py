@@ -20,7 +20,7 @@ def main() -> None:
     parser.add_argument('-m', '--multiarch',
                         action='store_true',
                         help='use the multi-architecture version of GDB')
-    parser.add_argument('-g', 'pwndbg_gdbinit_file',
+    parser.add_argument('-g', '--pwndbg_gdbinit_file',
                         help='pwndbg\'s gdbinit.py file to be sourced in GDB')
     parser.add_argument('-w', '--tmux_window_name',
                         default='morion-pwndbg',
