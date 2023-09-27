@@ -275,7 +275,7 @@ class sscanf(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, mode, logger)
-        self.synopsis = "int sscanf(const char *restrict s, const char *restrict format, ...);"
+        self.synopsis = "int sscanf(const char *restrict str, const char *restrict format, ...);"
         return
 
     def on_entry(self, ctx: TritonContext) -> None:
@@ -283,12 +283,12 @@ class sscanf(inst_hook):
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
                 # Log arguments
-                self.s = ctx.getConcreteRegisterValue(ctx.registers.r0)
-                self.s_ = Executor.get_memory_string(ctx, self.s)
+                self.str = ctx.getConcreteRegisterValue(ctx.registers.r0)
+                self.str_ = Executor.get_memory_string(ctx, self.str)
                 self.format = ctx.getConcreteRegisterValue(ctx.registers.r1)
                 self.format_ = Executor.get_memory_string(ctx, self.format)
-                self._logger.debug(f"\t s      = 0x{self.s:08x}")
-                self._logger.debug(f"\t*s      = '{self.s_:s}'")
+                self._logger.debug(f"\t s      = 0x{self.str:08x}")
+                self._logger.debug(f"\t*s      = '{self.str_:s}'")
                 self._logger.debug(f"\t format = 0x{self.format:08x}")
                 self._logger.debug(f"\t*format = '{self.format_:s}'")
                 # Parse conversion specifiers
@@ -327,6 +327,137 @@ class sscanf(inst_hook):
         return
 
     def on_leave(self, ctx: TritonContext) -> None:
+        try:
+            arch = ctx.getArchitecture()
+            if arch == ARCH.ARM32:
+                # Log arguments
+                cnt_assign = Converter.uint_to_int(ctx.getConcreteRegisterValue(ctx.registers.r0))
+                self._logger.debug(f"\tresult = {cnt_assign:d}")
+                # TODO: Taint mode
+                if self._mode == "taint":
+                    self._logger.warning("Taint mode not yet implemented.")
+                # TODO: Model mode
+                # - Support symbolic return value
+                elif self._mode == "model":
+                    # Concrete str
+                    str_ = Executor.get_memory_string(ctx, self.str)
+                    # Required ASTs
+                    ast = ctx.getAstContext()
+                    ast_space = ast.bv(ord(" "), CPUSIZE.BYTE_BIT)
+                    ast_cnt_chars = ast.bv(0, CPUSIZE.DWORD_BIT)
+                    # Iterate conversions
+                    for c, conversion in enumerate(self.conversions[0:max(0, cnt_assign)]):
+                        # Parse conversion
+                        num_arg = conversion.group(2)        # 2: Numbered argument specification
+                        ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
+                        max_fld_wth = conversion.group(4)    # 4: Maximum field width
+                        ass_all_chr = conversion.group(5)    # 5: Assignment-allocation character
+                        lth_mod = conversion.group(6)        # 6: Length modifier
+                        con_spe = conversion.group(7)        # 7: Conversion specifier
+                        # Argument specification
+                        if num_arg is None:
+                            arg_ptr = self.args[c]
+                        # Numbered argument specification
+                        elif num_arg <= cnt_assign:
+                            arg_ptr = self.args[num_arg-1]
+                        # Assignment suppressing
+                        if ass_sup_chr == '*':
+                            continue
+                        # Conversion specifier s (currently no support for length modifier l)
+                        if con_spe == 's' and lth_mod != 'l':
+                            # Assignment allocation
+                            if ass_all_chr == 'm':
+                                arg_ptr = ctx.getConcreteMemoryValue(MemoryAccess(arg_ptr, CPUSIZE.DWORD))
+                            # Store ASTs of str to an array
+                            ast_str = ast.array(CPUSIZE.DWORD_BIT)
+                            for i in range(len(str_)):
+                                # AST of str[i]
+                                ast_str_i = ctx.getMemoryAst(MemoryAccess(self.str+i, CPUSIZE.BYTE))
+                                # Store AST of str[i] into an array
+                                ast_str = ast.store(ast_str, i, ast_str_i)
+                            # Copy nonspace characters of the c-th conversion specifier to the c-th argument
+                            ast_cnt_spaces = ast.bv(0, CPUSIZE.DWORD_BIT)
+                            ast_cnt_nonspaces = ast.bv(0, CPUSIZE.DWORD_BIT)
+                            for i in range(len(str_)):
+                                # AST of str[i]
+                                ast_str_i = ctx.getMemoryAst(MemoryAccess(self.str+i, CPUSIZE.BYTE))
+                                # Count space characters of the c-th conversion specifier
+                                ast_cnt_spaces = ast.bvadd(
+                                    ast_cnt_spaces,
+                                    ast.ite(
+                                        # Ensure a subsequent series of space characters
+                                        ast.land([
+                                            i == ast_cnt_chars + ast_cnt_spaces,
+                                            ast_str_i == ast_space
+                                        ]),
+                                        ast.bv(1, CPUSIZE.DWORD_BIT),
+                                        ast.bv(0, CPUSIZE.DWORD_BIT)
+                                    )
+                                )
+                                # Count nonspace characters of the c-th conversion specifier
+                                ast_cnt_nonspaces = ast.bvadd(
+                                    ast_cnt_nonspaces,
+                                    ast.ite(
+                                        # Ensure a subsequent series of nonspace characters
+                                        ast.land([
+                                            i == ast_cnt_chars + ast_cnt_spaces + ast_cnt_nonspaces,
+                                            ast_str_i != ast_space
+                                        ]),
+                                        ast.bv(1, CPUSIZE.DWORD_BIT),
+                                        ast.bv(0, CPUSIZE.DWORD_BIT)
+                                    )
+                                )
+                                # Eventually copy nonspace characters to the corresponding argument
+                                ast_arg = ast.array(CPUSIZE.DWORD_BIT)
+                                ast_arg_idx = ast.bv(0, CPUSIZE.DWORD_BIT)
+                                ast_str_idx = ast.bvadd(ast_cnt_chars, ast_cnt_spaces)
+                                for j in range(len(str_)):
+                                    ast_arg = ast.store(ast_arg, ast_arg_idx, ast.ite(
+                                        # Ensure only characters of the c-th conversion specifier are copied
+                                        ast_str_idx < ast_cnt_chars + ast_cnt_spaces + ast_cnt_nonspaces,
+                                        ast.select(ast_str, ast_str_idx),   # Do copy
+                                        ast.select(ast_arg, ast_arg_idx)    # Do not copy
+                                    ))
+                                    ast_arg_idx = ast.bvadd(
+                                        ast_arg_idx,
+                                        ast.ite(
+                                            ast_str_idx < ast_cnt_chars + ast_cnt_spaces +ast_cnt_nonspaces,
+                                            ast.bv(1, CPUSIZE.DWORD_BIT),
+                                            ast.bv(0, CPUSIZE.DWORD_BIT)
+                                        )
+                                    )
+                                    ast_str_idx = ast.bvadd(
+                                        ast_str_idx,
+                                        ast.bv(1, CPUSIZE.DWORD_BIT)
+                                    )
+                                for j in range(len(str_)):
+                                    ast_arg_j = ast.select(ast_arg, j)
+                                    alias = SymbexHelper.create_symvar_alias(
+                                        mem_addr=arg_ptr+j,
+                                        info=f"MODEL:sscanf@libc:arg{c:d}+{j:d}"
+                                    )
+                                    sym_exp = ctx.newSymbolicExpression(ast_arg_j, alias)
+                                    if sym_exp:
+                                        ctx.assignSymbolicExpressionToMemory(
+                                            sym_exp, MemoryAccess(arg_ptr+j, CPUSIZE.BYTE)
+                                        )
+                            # Increment by the number of space and nonspace characters of the c-th conversion specifier s
+                            ast_cnt_chars = ast.bvadd(
+                                ast_cnt_chars,
+                                ast.bvadd(
+                                    ast_cnt_spaces,
+                                    ast_cnt_nonspaces
+                                )
+                            )
+                        else:
+                            self._logger.warning(f"Unsupported conversion.")
+                return
+            raise Exception(f"Architecture '{arch:d}' not supported.")
+        except Exception as e:
+            self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
+        return
+
+    def old_on_leave(self, ctx: TritonContext) -> None:
         try:
             arch = ctx.getArchitecture()
             if arch == ARCH.ARM32:
