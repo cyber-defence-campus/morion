@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
-from morion.help           import Alias
-from triton                import ARCH, CPUSIZE, MemoryAccess, TritonContext
+from morion.symbex.help import SymbexHelper
+from triton             import ARCH, CPUSIZE, MemoryAccess, TritonContext
 
 ctx = TritonContext(ARCH.ARM32)
 
@@ -25,7 +25,7 @@ def print_model(mem_addr, mem_size, value):
     for sym_var_id, solver_model in model:
         sym_var = ctx.getSymbolicVariable(sym_var_id)
         sym_var_size = sym_var.getBitSize() / 8
-        _, _, sym_var_info = Alias.parse(sym_var.getAlias())
+        _, _, _, sym_var_info = SymbexHelper.parse_symvar_alias(sym_var.getAlias())
         sym_var_value = solver_model.getValue()
         if sym_var_size == CPUSIZE.BYTE:
             print(f"[{sym_var_id}, {sym_var_info}] 0x{mem_addr:x}: 0x{sym_var_value:02x}")
@@ -42,17 +42,17 @@ def print_model(mem_addr, mem_size, value):
     print(f"\n")
 
 # Single-Byte Symbolic Variables
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1000, info="mem1_0"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1001, info="mem1_1"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1002, info="mem1_2"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1003, info="mem1_3"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1004, info="mem1_4"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1005, info="mem1_5"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1006, info="mem1_6"))
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x1007, info="mem1_7"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1000, info="mem1_0"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1001, info="mem1_1"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1002, info="mem1_2"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1003, info="mem1_3"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1004, info="mem1_4"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1005, info="mem1_5"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1006, info="mem1_6"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x1007, info="mem1_7"))
 
 # Multi-Byte Symbolic Variables
-ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), Alias.create(mem_addr=0x2000, info="mem2__"))
+ctx.symbolizeMemory(MemoryAccess(0x1000, CPUSIZE.BYTE), SymbexHelper.create_symvar_alias(mem_addr=0x2000, info="mem2__"))
 
 # Evaluate different models
 print_model(0x1000, CPUSIZE.QWORD, 0x4041424344454647)
