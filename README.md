@@ -73,10 +73,12 @@ EOF
 ### Symbolic Execution
 Symbolic execution of a binary's program trace:
 ```shell
-morion -h                   # Perform symbolic execution
-morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
+morion                  -h  # Perform symbolic execution
+morion_pwndbg           -h  # Use morion alongside pwndbg
 morion_control_hijacker -h  # Use symbolic execution to identify potential control flow hijacks
 morion_memory_hijacker  -h  # Use symbolic execution to identify potential memory hijacks
 morion_branch_analyzer  -h  # Use symbolic execution to analyze branches
 morion_path_analyzer    -h  # Use symbolic execution to analyze paths
+morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
+morion_rop_generator    -h  # Use symbolic execution to generate a ROP chain
 ```
