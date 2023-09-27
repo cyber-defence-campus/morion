@@ -30,7 +30,7 @@ class SymbexHelper:
     
     @staticmethod
     def parse_symvar_alias(alias: str) -> Tuple[int, str, int, str]:
-        """Helpler function to parse symbolic variable aliases in a consistent way.
+        """Helper function to parse symbolic variable aliases in a consistent way.
 
         Examples:
         - i: 0, r: r0
@@ -53,3 +53,30 @@ class SymbexHelper:
             if groups[3]:
                 info = groups[3]
         return (inst_cnt, reg_name, mem_addr, info)
+    
+    @staticmethod
+    def transform_model(model: dict) -> dict:
+        """Helper function to transform models into the following form:
+        {
+            "regs": {
+                reg_name: (value, inst_cnt, info)
+            },
+            "mems": {
+                f"0x{mem_addr:08x}": (value, inst_cnt, info)
+            }
+        }
+        """
+        m = {}
+        for _, sovler_model in model.items():
+            value = sovler_model.getValue()
+            alias = sovler_model.getVariable().getAlias()
+            inst_cnt, reg_name, mem_addr, info = SymbexHelper.parse_symvar_alias(alias)
+            if reg_name:
+                regs = m.get("regs", {})
+                regs.update({reg_name: (value, inst_cnt, info)})
+                m.update({"regs": regs})
+            if mem_addr:
+                mems = m.get("mems", {})
+                mems.update({f"0x{mem_addr:08x}": (value, inst_cnt, info)})
+                m.update({"mems": mems})
+        return m
