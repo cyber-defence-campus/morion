@@ -311,7 +311,7 @@ class sscanf(inst_hook):
 
     def __init__(self, name: str, entry_addr: int, leave_addr: int, target_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
         super().__init__(name, entry_addr, leave_addr, target_addr, mode, logger)
-        self.synopsis = "int sscanf(const char *restrict s, const char *restrict format, ...);"
+        self.synopsis = "int sscanf(const char *restrict str, const char *restrict format, ...);"
         return
 
     def on_entry(self) -> List[Tuple[int, bytes, str, str]]:
@@ -319,12 +319,12 @@ class sscanf(inst_hook):
             arch = GdbHelper.get_architecture()
             if arch in ["armv6", "armv7"]:
                 # Log arguments
-                self.s = GdbHelper.get_register_value("r0")
-                self.s_ = GdbHelper.get_memory_string(self.s)
+                self.str = GdbHelper.get_register_value("r0")
+                self.str_ = GdbHelper.get_memory_string(self.str)
                 self.format = GdbHelper.get_register_value("r1")
                 self.format_ = GdbHelper.get_memory_string(self.format)
-                self._logger.info(f"\t s      = 0x{self.s:08x}")
-                self._logger.info(f"\t*s      = '{self.s_:s}'")
+                self._logger.info(f"\t s      = 0x{self.str:08x}")
+                self._logger.info(f"\t*s      = '{self.str_:s}'")
                 self._logger.info(f"\t format = 0x{self.format:08x}")
                 self._logger.info(f"\t*format = '{self.format_:s}'")
                 # Parse conversion specifiers
