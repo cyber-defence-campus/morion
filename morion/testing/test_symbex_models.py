@@ -446,18 +446,22 @@ class TestModelLibcSscanf(TestSymbex):
         # Validate results
         ctx = self.se.ctx
         ast = ctx.getAstContext()
-        arg1_mem_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc704, 8))
-        arg1_mem_val = self.se.ctx.evaluateAstViaSolver(arg1_mem_ast)
-        arg2_mem_ast = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc604, 8))
-        arg2_mem_val = self.se.ctx.evaluateAstViaSolver(arg2_mem_ast)
+        ast_r0 = ctx.getRegisterAst(ctx.registers.r0)
+        val_r0 = ctx.evaluateAstViaSolver(ast_r0)
+        ast_arg1 = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc704, 8))
+        val_arg1 = self.se.ctx.evaluateAstViaSolver(ast_arg1)
+        ast_arg2 = self.se.ctx.getMemoryAst(MemoryAccess(0xbeffc604, 8))
+        val_arg2 = self.se.ctx.evaluateAstViaSolver(ast_arg2)
 
-        self.assertTrue(arg1_mem_val == int.from_bytes(b"ABC", byteorder="little"))
-        self.assertTrue(arg2_mem_val == int.from_bytes(b"E", byteorder="little"))
+        self.assertTrue(val_r0 == 2)
+        self.assertTrue(val_arg1 == int.from_bytes(b"ABC", byteorder="little"))
+        self.assertTrue(val_arg2 == int.from_bytes(b"E", byteorder="little"))
 
         # Testcase 1.1
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"ABC", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"E", byteorder="little")
+            ast_arg1 == int.from_bytes(b"ABC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc105"][0] == ord("B"))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("C"))
@@ -465,8 +469,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 1.2
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"A", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"A", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc105"][0] == ord(" "))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("A"))
@@ -474,8 +479,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 1.3
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"AAAAE", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"", byteorder="little")
+            ast_arg1 == int.from_bytes(b"AAAAE", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"", byteorder="little"),
+            ast_r0 == 1
         ])))
         self.assertTrue(model["mems"]["0xbeffc105"][0] == ord("A"))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("A"))
@@ -483,8 +489,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 1.4
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"BBE", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"BBE", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc105"][0] == ord(" "))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("B"))
@@ -492,15 +499,32 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 1.5
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"BBC", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"E", byteorder="little")
+            ast_arg1 == int.from_bytes(b"BBC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertFalse(bool(model))
 
         # Testcase 1.6
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"BBEF", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"BBEF", byteorder="little"),
+            ast_r0 == 2
+        ])))
+        self.assertFalse(bool(model))
+
+        # Testcase 1.7
+        model = SymbexHelper.transform_model(ctx.getModel(ast.land([
+            ast_arg1 == int.from_bytes(b"ABC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 1
+        ])))
+        self.assertFalse(bool(model))
+
+        # Testcase 1.8
+        model = SymbexHelper.transform_model(ctx.getModel(ast.lor([
+            ast_r0 < 1,
+            ast_r0 > 2
         ])))
         self.assertFalse(bool(model))
 
@@ -602,18 +626,22 @@ class TestModelLibcSscanf(TestSymbex):
         # Validate results
         ctx = self.se.ctx
         ast = ctx.getAstContext()
-        arg1_mem_ast = ctx.getMemoryAst(MemoryAccess(0xbeffc704, 8))
-        arg1_mem_val = ctx.evaluateAstViaSolver(arg1_mem_ast)
-        arg2_mem_ast = ctx.getMemoryAst(MemoryAccess(0xbeffc604, 8))
-        arg2_mem_val = ctx.evaluateAstViaSolver(arg2_mem_ast)
+        ast_r0 = ctx.getRegisterAst(ctx.registers.r0)
+        val_r0 = ctx.evaluateAstViaSolver(ast_r0)
+        ast_arg1 = ctx.getMemoryAst(MemoryAccess(0xbeffc704, 8))
+        val_arg1 = ctx.evaluateAstViaSolver(ast_arg1)
+        ast_arg2 = ctx.getMemoryAst(MemoryAccess(0xbeffc604, 8))
+        val_arg2 = ctx.evaluateAstViaSolver(ast_arg2)
 
-        self.assertTrue(arg1_mem_val == int.from_bytes(b"ABC", byteorder="little"))
-        self.assertTrue(arg2_mem_val == int.from_bytes(b"E", byteorder="little"))
+        self.assertTrue(val_r0 == 2)
+        self.assertTrue(val_arg1 == int.from_bytes(b"ABC", byteorder="little"))
+        self.assertTrue(val_arg2 == int.from_bytes(b"E", byteorder="little"))
 
         # Testcase 2.1
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"ABC", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"E", byteorder="little")
+            ast_arg1 == int.from_bytes(b"ABC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("B"))
         self.assertTrue(model["mems"]["0xbeffc107"][0] == ord("C"))
@@ -621,8 +649,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 2.2
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"A", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"A", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord(" "))
         self.assertTrue(model["mems"]["0xbeffc107"][0] == ord("A"))
@@ -630,8 +659,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 2.3
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"AAAAE", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"", byteorder="little")
+            ast_arg1 == int.from_bytes(b"AAAAE", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"", byteorder="little"),
+            ast_r0 == 1
         ])))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord("A"))
         self.assertTrue(model["mems"]["0xbeffc107"][0] == ord("A"))
@@ -639,8 +669,9 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 2.4
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"BBE", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"BBE", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertTrue(model["mems"]["0xbeffc106"][0] == ord(" "))
         self.assertTrue(model["mems"]["0xbeffc107"][0] == ord("B"))
@@ -648,15 +679,32 @@ class TestModelLibcSscanf(TestSymbex):
 
         # Testcase 2.5
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"BBC", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"E", byteorder="little")
+            ast_arg1 == int.from_bytes(b"BBC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 2
         ])))
         self.assertFalse(bool(model))
 
         # Testcase 2.6
         model = SymbexHelper.transform_model(ctx.getModel(ast.land([
-            arg1_mem_ast == int.from_bytes(b"A", byteorder="little"),
-            arg2_mem_ast == int.from_bytes(b"BBEF", byteorder="little")
+            ast_arg1 == int.from_bytes(b"A", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"BBEF", byteorder="little"),
+            ast_r0 == 2
+        ])))
+        self.assertFalse(bool(model))
+
+        # Testcase 2.7
+        model = SymbexHelper.transform_model(ctx.getModel(ast.land([
+            ast_arg1 == int.from_bytes(b"ABC", byteorder="little"),
+            ast_arg2 == int.from_bytes(b"E", byteorder="little"),
+            ast_r0 == 1
+        ])))
+        self.assertFalse(bool(model))
+
+        # Testcase 2.8
+        model = SymbexHelper.transform_model(ctx.getModel(ast.lor([
+            ast_r0 < 1,
+            ast_r0 > 2
         ])))
         self.assertFalse(bool(model))
 

@@ -336,8 +336,7 @@ class sscanf(inst_hook):
                 # TODO: Taint mode
                 if self._mode == "taint":
                     self._logger.warning("Taint mode not yet implemented.")
-                # TODO: Model mode
-                # - Support symbolic return value
+                # Model mode
                 elif self._mode == "model":
                     # Concrete str
                     str_ = Executor.get_memory_string(ctx, self.str)
@@ -345,6 +344,7 @@ class sscanf(inst_hook):
                     ast = ctx.getAstContext()
                     ast_space = ast.bv(ord(" "), CPUSIZE.BYTE_BIT)
                     ast_cnt_chars = ast.bv(0, CPUSIZE.DWORD_BIT)
+                    ast_cnt_ass = ast.bv(0, CPUSIZE.DWORD_BIT)
                     # Iterate conversions
                     for c, conversion in enumerate(self.conversions[0:max(0, cnt_assign)]):
                         # Parse conversion
@@ -441,6 +441,16 @@ class sscanf(inst_hook):
                                         ctx.assignSymbolicExpressionToMemory(
                                             sym_exp, MemoryAccess(arg_ptr+j, CPUSIZE.BYTE)
                                         )
+                            # Count number of assignments
+                            ast_cnt_ass = ast.bvadd(
+                                ast_cnt_ass,
+                                ast.ite(
+                                    # Ensure that the c-th conversion specifier contains nonspace characters
+                                    0 < ast_cnt_nonspaces,
+                                    ast.bv(1, CPUSIZE.DWORD_BIT),
+                                    ast.bv(0, CPUSIZE.DWORD_BIT)
+                                )
+                            )
                             # Increment by the number of space and nonspace characters of the c-th conversion specifier s
                             ast_cnt_chars = ast.bvadd(
                                 ast_cnt_chars,
@@ -451,6 +461,11 @@ class sscanf(inst_hook):
                             )
                         else:
                             self._logger.warning(f"Unsupported conversion.")
+                    # Assign symbolic return value
+                    ctx.assignSymbolicExpressionToRegister(
+                        ctx.newSymbolicExpression(ast_cnt_ass),
+                        ctx.registers.r0
+                    )
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
