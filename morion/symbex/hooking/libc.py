@@ -338,6 +338,56 @@ class sscanf(inst_hook):
                     self._logger.warning("Taint mode not yet implemented.")
                 # Model mode
                 elif self._mode == "model":
+                    s = self.str
+                    for ci, conversion in enumerate(self.conversions[0:max(0, cnt_assign)]):
+                        # Parse conversion
+                        num_arg = conversion.group(2)        # 2: Numbered argument specification
+                        ass_sup_chr = conversion.group(3)    # 3: Assignment-suppressing character
+                        max_fld_wth = conversion.group(4)    # 4: Maximum field width
+                        ass_all_chr = conversion.group(5)    # 5: Assignment-allocation character
+                        lth_mod = conversion.group(6)        # 6: Length modifier
+                        con_spe = conversion.group(7)        # 7: Conversion specifier
+                        # Argument specification
+                        if num_arg is None:
+                            arg_ptr = self.args[ci]
+                        # Numbered argument specification
+                        elif num_arg <= cnt_assign:
+                            arg_ptr = self.args[num_arg-1]
+                        # Assignment suppressing
+                        if ass_sup_chr == '*':
+                            continue
+                        # Conversion specifier s (currently no support for length modifier l)
+                        if con_spe == 's' and lth_mod != 'l':
+                            # Parse string
+                            inp_str = Executor.get_memory_string(ctx, s)
+                            m = re.search(r"([^\s]+)", inp_str)
+                            if m is None or len(m.groups()) != 1:
+                                self._logger.warning(f"Failed to apply conversion specifier 's' to '{inp_str:s}'")
+                                continue
+                            arg_str = m.group(1)
+                            arg_off = m.start()
+                            # Assignment allocation
+                            if ass_all_chr == 'm':
+                                arg_ptr = ctx.getConcreteMemoryValue(MemoryAccess(arg_ptr, CPUSIZE.DWORD))
+                            # Move symbolic bytes
+                            cut = len(arg_str) > 3
+                            for i in range(len(arg_str)):
+                                sym_exp = ctx.getSymbolicMemory(s+arg_off+i)
+                                if sym_exp:
+                                    ctx.assignSymbolicExpressionToMemory(
+                                        sym_exp, MemoryAccess(arg_ptr+i, CPUSIZE.BYTE)
+                                    )
+                                    if not cut or i == 0:
+                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                                    elif i == len(arg_str)-1:
+                                        self._logger.debug(f"\t...")
+                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                            s += m.end()
+                        # TODO: Support other conversions
+                        else:
+                            self._logger.warning(f"Unsupported conversion.")
+                # Model mode (V2)
+                elif self._mode == "model_v2":
                     # Concrete str
                     str_ = Executor.get_memory_string(ctx, self.str)
                     # Required ASTs
@@ -375,6 +425,7 @@ class sscanf(inst_hook):
                                 ast_str_i = ctx.getMemoryAst(MemoryAccess(self.str+i, CPUSIZE.BYTE))
                                 # Store AST of str[i] into an array
                                 ast_str = ast.store(ast_str, i, ast_str_i)
+                            self._logger.debug(f"\tConvSpec {c:d}: str stored to array")
                             # Copy nonspace characters of the c-th conversion specifier to the c-th argument
                             ast_cnt_spaces = ast.bv(0, CPUSIZE.DWORD_BIT)
                             ast_cnt_nonspaces = ast.bv(0, CPUSIZE.DWORD_BIT)
