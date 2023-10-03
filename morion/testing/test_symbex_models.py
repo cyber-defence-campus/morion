@@ -359,7 +359,7 @@ class TestModelLibcSscanf(TestSymbex):
                         'entry' : '0x00cffc',
                         'leave' : '0x00d000',
                         'target': '0x001000',
-                        'mode'  : 'model'
+                        'mode'  : 'model_v2'
                     }]
                 }
             },
@@ -538,7 +538,7 @@ class TestModelLibcSscanf(TestSymbex):
                         'entry' : '0x00cffc',
                         'leave' : '0x00d000',
                         'target': '0x001000',
-                        'mode'  : 'model'
+                        'mode'  : 'model_v2'
                     }]
                 }
             },
