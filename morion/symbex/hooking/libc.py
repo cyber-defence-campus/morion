@@ -56,10 +56,10 @@ class fgets(inst_hook):
                             mem = MemoryAccess(s+i, CPUSIZE.BYTE)
                             ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=s+i, info=f"MODEL:fgets@libc:s+{i:d}"))
                             if not cut or i == 0:
-                                self._logger.debug(f"\t0x{s+i:08x}=$$")
+                                self._logger.debug(f"\t0x{s+i:08x} = $$")
                             elif i == self.n-2:
                                 self._logger.debug(f"\t...")
-                                self._logger.debug(f"\t0x{s+i:08x}=$$")
+                                self._logger.debug(f"\t0x{s+i:08x} = $$")
                 return
             raise Exception(f"Architecture '{arch:d}' not supported.")
         except Exception as e:
@@ -378,10 +378,10 @@ class sscanf(inst_hook):
                                         sym_exp, MemoryAccess(arg_ptr+i, CPUSIZE.BYTE)
                                     )
                                     if not cut or i == 0:
-                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                                        self._logger.debug(f"\t0x{arg_ptr+i:08x} = $$")
                                     elif i == len(arg_str)-1:
                                         self._logger.debug(f"\t...")
-                                        self._logger.debug(f"0x{arg_ptr+i:08x}=$$")
+                                        self._logger.debug(f"\t0x{arg_ptr+i:08x} = $$")
                             s += m.end()
                         # TODO: Support other conversions
                         else:
