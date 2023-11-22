@@ -94,7 +94,7 @@ class ROPGenerator(Executor):
                 model = self.ctx.getModel(ast.land(constraints))
                 model = sorted(list(model.items()), key=lambda t: t[1].getVariable())
                 if not model:
-                    self._logger.error(f"No solution fullfilliing the preconditions of gadget {gadget_id:d} found!")
+                    self._logger.error(f"No solution fulfilling the preconditions of gadget {gadget_id:d} found!")
                     return
                 self._logger.debug(f"Solution:", color="green")
                 for _, solver_model in model:
