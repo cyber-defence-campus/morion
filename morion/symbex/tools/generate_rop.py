@@ -23,7 +23,10 @@ class ROPGenerator(Executor):
         super().load(trace_file)
         # Load ROP chain
         self._logger.info(f"Start loading ROP chain from file '{trace_file:s}'...")
-        self._rop_chain = self._recorder._trace.get(rop_chain, [])
+        # self._rop_chain = self._recorder._trace.get(rop_chain, [])
+        rop_chains = self._recorder._trace.get("ropchains", {})
+        if rop_chains is None: rop_chains = {}
+        self._rop_chain = rop_chains.get(rop_chain, [])
         if self._rop_chain is None: self._rop_chain = []
         self._logger.info(f"... finished loading ROP chain from file '{trace_file:s}'.")
         return
@@ -34,48 +37,52 @@ class ROPGenerator(Executor):
         """
         # Run trace
         super().run(args, exe_last_inst=False)
-        # Ensure that the ROP chain is correctly aligned with the trace end
-        try:
-            g0_i0_addr = int(self._rop_chain[0]["instructions"][0][0], base=0)
-        except:
-            self._logger.error(f"Failed to access the 1st instruction of gadget 0.")
-            return
-        pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)
-        if g0_i0_addr != pc:
-            self._logger.error(f"Address of 1st instruction in gadget 0 (0x{g0_i0_addr:08x}) does not match the PC (0x{pc:08x}) at the trace end.")
-            return
         # Run ROP chain
         ast = self.ctx.getAstContext()
+        rop_chain = args["rop_chain"]
         payloads = {}
-        for gadget_id, gadget in enumerate(self._rop_chain):
-            preconditions = gadget.get("preconditions", {})
+        for element_id, element in enumerate(self._rop_chain):
+            preconditions = element.get("preconditions", {})
             if preconditions is None: preconditions = {}
-            prec_regs = preconditions.get("regs", {})
-            if prec_regs is None: prec_regs = {}
-            prec_mems = preconditions.get("mems", {})
-            if prec_mems is None: prec_mems = {}
-            instructions = gadget.get("instructions", [])
-            if instructions is None: instructions = []
-            solution = gadget.get("solution", {})
+            reg_preconditions = preconditions.get("regs", {})
+            if reg_preconditions is None: reg_preconditions = {}
+            mem_preconditions = preconditions.get("mems", {})
+            if mem_preconditions is None: mem_preconditions = {}
+            instruction = element.get("instruction", None)
+            solution = element.get("solution", {})
             if solution is None: solution = {}
+            # Read instruction address and opcode
+            try:
+                inst_address = int(instruction[0], base=0)
+                inst_opcode = bytes.fromhex(instruction[1].replace(" ", ""))
+                inst_disassembly = instruction[2]
+                inst_comment = instruction[3]
+            except:
+                self._logger.error(f"Failed to load instruction {element_id:d} of ROP chain '{rop_chain:s}'.")
+                return {}
+            # Ensure that instructions are correctly aligned
+            pc = self.ctx.getConcreteRegisterValue(self.ctx.registers.pc)
+            if inst_address != pc:
+                self._logger.error(f"Address (0x{inst_address:08x}) of instruction {element_id:d} in ROP chain '{rop_chain:s}' is not aligned with the PC (0x{pc:08x}).")
+                return {}
             # Load preconditons
-            self._logger.info(f"Start loading preconditions of gadget {gadget_id:d}...")
+            self._logger.info(f"Start loading preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             path_constraints = VulnerabilityAnalysis.get_path_constraints(self.ctx, False)
             constraints = [path_constraints]
             self._logger.debug("Regs:")
-            for reg_name, reg_value in prec_regs.items():
+            for reg_name, reg_value in reg_preconditions.items():
                 try:
                     if not isinstance(reg_value, int):
                         reg_value = int(reg_value, base=0)
                     reg = self.ctx.getRegister(reg_name)
                     reg_ast = self.ctx.getRegisterAst(reg)
                 except:
-                    self._logger.warning(f"Failed to parse register precondition of gadget {gadget_id:d}.")
+                    self._logger.warning(f"Failed to parse register precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
                     continue
                 constraints.append(reg_ast == reg_value)
                 self._logger.debug(f"\t{reg_name:s} == 0x{reg_value:08x}")
             self._logger.debug("Mems:")
-            for mem_addr, mem_value in prec_mems.items():
+            for mem_addr, mem_value in mem_preconditions.items():
                 try:
                     if not isinstance(mem_addr, int):
                         mem_addr = int(mem_addr, base=0)
@@ -83,19 +90,19 @@ class ROPGenerator(Executor):
                         mem_value = int(mem_value, base=0)
                     mem_ast = self.ctx.getMemoryAst(MemoryAccess(mem_addr, CPUSIZE.BYTE))
                 except:
-                    self._logger.warning(f"Failed to parse memory precondition of gadget {gadget_id:d}.")
+                    self._logger.warning(f"Failed to parse memory precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
                     continue
                 constraints.append(mem_ast == mem_value)
                 self._logger.debug(f"\t0x{mem_addr:08x} == 0x{mem_value:02x}")
-            self._logger.info(f"... finished loading preconditions of gadget {gadget_id:d}.")
+            self._logger.info(f"... finished loading preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
             # Solve preconditions
-            self._logger.info(f"Start solving preconditions of gadget {gadget_id:d}...")
+            self._logger.info(f"Start solving preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             if len(constraints) >= 2:
                 model = self.ctx.getModel(ast.land(constraints))
                 model = sorted(list(model.items()), key=lambda t: t[1].getVariable())
                 if not model:
-                    self._logger.error(f"No solution fulfilling the preconditions of gadget {gadget_id:d} found!")
-                    return
+                    self._logger.error(f"No solution fulfilling the preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}' found!")
+                    return {}
                 self._logger.debug(f"Solution:", color="green")
                 for _, solver_model in model:
                     value = solver_model.getValue()
@@ -124,17 +131,17 @@ class ROPGenerator(Executor):
                         payloads[inst_cnt] = payl
                         self._logger.debug(f"\t0x{mem_addr:08x}: 0x{value:02x} [INST:{inst_cnt:d}, {info:s}]", color="green")
             else:
-                self._logger.debug(f"Gadget {gadget_id:d} has no precondittions.")
-            self._logger.info(f"... finished solving preconditions of gadget {gadget_id:d}.")
+                self._logger.debug(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' has no precondittions.")
+            self._logger.info(f"... finished solving preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
             # Concretize preconditions
-            self._logger.info(f"Start concretizing preconditions of gadget {gadget_id:d}...")
+            self._logger.info(f"Start concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             self._logger.debug("Regs:")
-            for reg_name, reg_value in prec_regs.items():
+            for reg_name, reg_value in reg_preconditions.items():
                 try:
                     if not isinstance(reg_value, int):
                         reg_value = int(reg_value, base=0)
                 except:
-                    self._logger.warning(f"Failed to parse register precondition of gadget {gadget_id:d}.")
+                    self._logger.warning(f"Failed to parse register precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
                     continue
                 try:
                     reg = self.ctx.getRegister(reg_name)
@@ -147,14 +154,14 @@ class ROPGenerator(Executor):
                     continue
                 self._logger.debug(f"\t{reg_name:s}: 0x{reg_value:08x}")
             self._logger.debug("Mems:")
-            for mem_addr, mem_value in prec_mems.items():
+            for mem_addr, mem_value in mem_preconditions.items():
                 try:
                     if not isinstance(mem_addr, int):
                         mem_addr = int(mem_addr, base=0)
                     if not isinstance(mem_value, int):
                         mem_value = int(mem_value, base=0)
                 except:
-                    self._logger.warning(f"Failed to parse memory precondition of gadget {gadget_id:d}.")
+                    self._logger.warning(f"Failed to parse memory precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
                     continue
                 try:
                     mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
@@ -166,24 +173,13 @@ class ROPGenerator(Executor):
                     self._logger.warning(f"Failed to concretize memory '0x{mem_addr:08x}'.")
                     continue
                 self._logger.debug(f"\t0x{mem_addr:08x}: 0x{mem_value:02x}")
-            self._logger.info(f"... finished concretizing preconditions of gadget {gadget_id:d}...")
-            # Symbolic exeuction of gadget instructions
-            self._logger.info(f"Start symbolic execution of gadget {gadget_id:d}...")
-            for instruction_id, (addr, opcode, disassembly, comment) in enumerate(instructions):
-                # Read instruction address and opcode
-                try:
-                    addr = int(addr, base=16)
-                    opcode = bytes.fromhex(opcode.replace(" ", ""))
-                except:
-                    self._logger.error(f"Failed to read instruction {instruction_id:d} of gadget {gadget_id:d}.")
-                    return
-                # # Execute potential hook
-                # self._hook(addr)
-                # Symbolic execution
-                if not self._step(addr, opcode, disassembly, comment):
-                    self._logger.error(f"Instruction at address 0x{addr:08x} not supported.")
-                    return
-            self._logger.info(f"... finished symbolic execution of gadget {gadget_id:d}.")
+            self._logger.info(f"... finished concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
+            # Symbolic exeuction of instruction
+            self._logger.info(f"Start symbolic execution of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
+            if not self._step(inst_address, inst_opcode, inst_disassembly, inst_comment):
+                self._logger.error(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' not supported.")
+                return {}
+            self._logger.info(f"... finished symbolic execution of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
         return payloads
     
     def store(self, trace_file: str, rop_chain: str) -> None:
@@ -191,7 +187,8 @@ class ROPGenerator(Executor):
         Store trace file and included ROP chain.
         """
         self._logger.info(f"Start storing file '{trace_file:s}'...")
-        self._recorder._trace[rop_chain] = self._rop_chain
+        # self._recorder._trace[rop_chain] = self._rop_chain
+        self._recorder._trace["ropchains"][rop_chain] = self._rop_chain
         self._recorder.store(trace_file)
         self._logger.info(f"... finished storing file '{trace_file:s}'.")
         return
