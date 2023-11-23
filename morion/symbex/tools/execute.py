@@ -206,6 +206,7 @@ class Executor:
 
             # Disassemble instruction
             self.ctx.disassembly(inst)
+            disassembly = inst.getDisassembly()
 
             # Pre-process instruction
             for pre_processing_function in self._pre_processing_functions:
