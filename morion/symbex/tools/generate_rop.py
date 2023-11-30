@@ -274,7 +274,7 @@ class ROPGenerator(Executor):
 
 def main() -> None:
     # Argument parsing
-    description = """Symbolically execute a program trace to generate a ROP chain.
+    description = """Symbolically execute a program trace to help generating a ROP chain.
     """
     parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
