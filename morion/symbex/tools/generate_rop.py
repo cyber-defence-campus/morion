@@ -122,8 +122,8 @@ class ROPGenerator(Executor):
                     elif mem_addr:
                         solu_mems = solution.get("mems", {})
                         if solu_mems is None: solu_mems = {}
-                        solu_mems["0x{mem_addr:08x}"] = f"0x{value:02x}"
-                        solu_mems["mems"] = solu_mems
+                        solu_mems[f"0x{mem_addr:08x}"] = f"0x{value:02x}"
+                        solution["mems"] = solu_mems
                         payl = payloads.get(inst_cnt, {})
                         payl_mems = payl.get("mems", {})
                         payl_mems[f"0x{mem_addr:08x}"] = [f"0x{value:02x}", info]
@@ -174,7 +174,7 @@ class ROPGenerator(Executor):
                     continue
                 self._logger.debug(f"\t0x{mem_addr:08x}: 0x{mem_value:02x}")
             self._logger.info(f"... finished concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
-            # Symbolic exeuction of instruction
+            # Symbolic execution of instruction
             self._logger.info(f"Start symbolic execution of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             if not self._step(inst_address, inst_opcode, inst_disassembly, inst_comment):
                 self._logger.error(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' not supported.")
