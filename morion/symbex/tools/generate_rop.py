@@ -71,7 +71,7 @@ class ROPGenerator(Executor):
             constraints = [path_constraints]
             self._logger.debug("Regs:")
             for reg_name, reg_value in reg_preconditions.items():
-                reg_name = str(reg_name)
+                reg_name = SymbexHelper.parse_register_name(reg_name, self.ctx)
                 reg_value = str(reg_value)
                 try:
                     reg = self.ctx.getRegister(reg_name)
@@ -143,7 +143,7 @@ class ROPGenerator(Executor):
             self._logger.info(f"Start concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             self._logger.debug("Regs:")
             for reg_name, reg_value in reg_preconditions.items():
-                reg_name = str(reg_name)
+                reg_name = SymbexHelper.parse_register_name(reg_name, self.ctx)
                 reg_value = str(reg_value)
                 try:
                     reg = self.ctx.getRegister(reg_name)

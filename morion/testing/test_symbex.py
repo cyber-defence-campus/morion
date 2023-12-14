@@ -32,6 +32,98 @@ class TestSymbex(unittest.TestCase):
 
 class TestLoading(TestSymbex):
 
+    def test_parse_register_name(self) -> None:
+        # Init trace file
+        self._write_tmp_trace_file({
+            'info': {'arch': 'armv7', 'thumb': False},
+            'states': {
+                'entry': {
+                    'addr': '0x2000',
+                    'regs': {
+                        'sb' : 16843009,
+                        'sl' : 0x01010101,
+                        'fp' : '16843009',
+                        'ip' : '$$',
+                        'r13': [0x01010101],
+                        'lr' : ['0x01010101'],
+                        'r15': ['0x2000', '$$']
+                    },
+                    'mems': {}
+                },
+                'leave': {
+                    'addr': '0x2004'
+                }
+            },
+            'trace': {
+                'instructions': [
+                    ['0x2000', '00 f0 20 e3', 'nop', '']
+                ]
+            }
+        })
+
+        # Run symbolic execution
+        self.se.load(self.tf.name)
+        self.se.run()
+
+        # TODO: Validate results
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r9'))
+        reg_sym = self.se._is_register_symbolic('r9')
+        self.assertEqual(reg_con, 0x01010101,   'r9 [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'r9 [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r10'))
+        reg_sym = self.se._is_register_symbolic('r10')
+        self.assertEqual(reg_con, 0x01010101,   'r10 [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'r10 [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r11'))
+        reg_sym = self.se._is_register_symbolic('r11')
+        self.assertEqual(reg_con, 0x01010101,   'r11 [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'r11 [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r12'))
+        reg_sym = self.se._is_register_symbolic('r12')
+        self.assertEqual(reg_con, 0x00000000,   'r12 [concrete]')
+        self.assertEqual(reg_sym, [1, 1, 1, 1], 'r12 [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('sp'))
+        reg_sym = self.se._is_register_symbolic('sp')
+        self.assertEqual(reg_con, 0x01010101,   'sp  [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'sp  [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r14'))
+        reg_sym = self.se._is_register_symbolic('r14')
+        self.assertEqual(reg_con, 0x01010101,   'r14 [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'r14 [symbolic]')
+
+        reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('pc'))
+        reg_sym = self.se._is_register_symbolic('pc')
+        self.assertEqual(reg_con, 0x2004,   'pc  [concrete]')
+        self.assertEqual(reg_sym, [0, 0, 0, 0], 'pc  [symbolic]')
+
+        regs_entry = self.se._recorder._trace["states"]["entry"]["regs"]
+        regs_leave = self.se._recorder._trace["states"]["leave"]["regs"]
+        self.assertEqual(regs_entry, {
+            'r9' : 16843009,
+            'r10': 0x01010101,
+            'r11': '16843009',
+            'r12': '$$',
+            'sp' : [0x01010101],
+            'r14' : ['0x01010101'],
+            'pc' : ['0x2000', '$$']
+        }, 'states:entry:regs')
+        self.assertEqual(regs_leave, {
+            'r9' : ['0x01010101'],
+            'r10': ['0x01010101'],
+            'r11': ['0x01010101'],
+            'r12': ['0x00000000', '$$'],
+            'sp' : ['0x01010101'],
+            'r14': ['0x01010101'],
+            'pc' : ['0x00002004']
+        }, 'states:leave:regs')
+
+        return
+
     def test_parse_memory_address(self) -> None:
         # Init trace file
         self._write_tmp_trace_file({

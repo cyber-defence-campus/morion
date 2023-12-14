@@ -2,7 +2,7 @@
 ## -*- coding: utf-8 -*-
 import re
 import string
-from   triton import TritonContext
+from   triton import ARCH, TritonContext
 from   typing import Tuple
 
 
@@ -83,6 +83,28 @@ class SymbexHelper:
                 m.update({"mems": mems})
         return m
     
+    @staticmethod
+    def parse_register_name(reg_name: object, ctx: TritonContext) -> str:
+        """Helper function that translates register names to the ones used by Triton.
+        """
+        reg_name_str = str(reg_name).strip().lower()
+
+        arch = ctx.getArchitecture()
+        if arch == ARCH.ARM32:
+            reg_aliases = {
+                "sb": "r9",
+                "sl": "r10",
+                "fp": "r11",
+                "ip": "r12",
+                "r13": "sp",
+                "lr": "r14",
+                "r15": "pc"
+            }
+            if reg_name_str in reg_aliases:
+                reg_name_str = reg_aliases[reg_name_str]
+
+        return reg_name_str
+
     @staticmethod
     def parse_memory_address(mem_addr: object, ctx: TritonContext) -> int:
         """Helper function that parses memory addresses. It supports memory addresses calculated

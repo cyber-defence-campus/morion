@@ -53,7 +53,13 @@ class Executor:
         self._logger.debug("Regs:")
         regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {}).copy()
         for reg_name, reg_values in regs.items():
-            reg_name = str(reg_name)
+            reg_alias = SymbexHelper.parse_register_name(reg_name, self.ctx)
+            if reg_name != reg_alias:
+                rs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {})
+                r = rs.get(reg_name, {})
+                del rs[reg_name]
+                reg_name = reg_alias
+                rs[reg_name] = r
             if not isinstance(reg_values, list): reg_values = [reg_values]
             # Access register
             try:
@@ -296,6 +302,7 @@ class Executor:
             reg_names.add(reg.getName())
         # Process registers accessed in entry state
         for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+            reg_name = SymbexHelper.parse_register_name(reg_name, self.ctx)
             reg_names.add(reg_name)
         # Process registers
         for reg_name in sorted(reg_names):

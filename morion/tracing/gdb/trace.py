@@ -125,6 +125,28 @@ class GdbHelper:
         return s
 
     @staticmethod
+    def parse_register_name(reg_name: object) -> str:
+        """Helper function that translates register names to the ones used by Triton.
+        """
+        reg_name_str = str(reg_name).strip().lower()
+
+        arch = GdbHelper.get_architecture()
+        if arch in ["armv6", "armv7"]:
+            reg_aliases = {
+                "sb": "r9",
+                "sl": "r10",
+                "fp": "r11",
+                "ip": "r12",
+                "r13": "sp",
+                "lr": "r14",
+                "r15": "pc"
+            }
+            if reg_name_str in reg_aliases:
+                reg_name_str = reg_aliases[reg_name_str]
+
+        return reg_name_str
+
+    @staticmethod
     def parse_memory_address(mem_addr: object) -> int:
         """Helper function that parses memory addresses. It supports memory addresses calculated
         based on register values (see examples below).
@@ -447,6 +469,7 @@ class GdbTracer:
 
             # Store accessed registers at leave
             for reg_name, _ in self._recorder._trace["states"]["entry"]["regs"].items():
+                reg_name = GdbHelper.parse_register_name(reg_name)
                 reg_value = GdbHelper.get_register_value(reg_name)
                 self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
 
@@ -475,7 +498,13 @@ class GdbTracer:
         logger.debug("Regs:")
         regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {}).copy()
         for reg_name, reg_values in regs.items():
-            reg_name = str(reg_name)
+            reg_alias = GdbHelper.parse_register_name(reg_name)
+            if reg_name != reg_alias:
+                rs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {})
+                r = rs.get(reg_name, {})
+                del rs[reg_name]
+                reg_name = reg_alias
+                rs[reg_name] = r
             if not isinstance(reg_values, list): reg_values = [reg_values]
             # Set concrete register values
             for reg_value in reg_values:
