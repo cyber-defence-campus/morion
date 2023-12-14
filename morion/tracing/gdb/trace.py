@@ -470,7 +470,7 @@ class GdbTracer:
         if not self._recorder.load(trace_file):
             return False
         # Empty instructions
-        self._recorder._trace["instructions"] = []
+        self._recorder._trace["trace"]["instructions"] = []
         # Setup registers
         logger.debug("Regs:")
         regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {}).copy()

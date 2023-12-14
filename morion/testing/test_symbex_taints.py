@@ -44,13 +44,15 @@ class TestTaintLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
+                    ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -99,13 +101,15 @@ class TestTaintLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
+                    ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -154,13 +158,15 @@ class TestTaintLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=taint)'],
+                    ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=taint)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]
+            }
         })
 
         # Run symbolic execution

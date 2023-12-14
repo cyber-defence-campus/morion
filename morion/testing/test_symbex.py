@@ -74,9 +74,11 @@ class TestLoading(TestSymbex):
                     'addr': '0x2004'
                 }
             },
-            'instructions': [
-                ['0x2000', '00 f0 20 e3', 'nop', '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x2000', '00 f0 20 e3', 'nop', '']
+                ]
+            }
         })
 
         # Run symbolic execution

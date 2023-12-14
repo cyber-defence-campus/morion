@@ -42,9 +42,11 @@ class Recorder:
                     }
                 }
             },
-            "instructions": [
-                ["0x0", "00 00", "inst", "comment"]
-            ]
+            "trace": {
+                "instructions": [
+                    ["0x0", "00 00", "inst", "comment"]
+                ]
+            }
         }
         return
     
@@ -82,9 +84,12 @@ class Recorder:
         leave_state["mems"] = mems
         states["leave"] = leave_state
         self._trace["states"] = states
-        inst = self._trace.get("instructions", [])
+        trace = self._trace.get("trace", {})
+        if trace is None: trace = {}
+        inst = trace.get("instructions", [])
         if inst is None: inst = []
-        self._trace["instructions"] = inst
+        trace["instructions"] = inst
+        self._trace["trace"] = trace
         return True
 
     def store(self, trace_file: str) -> bool:
@@ -159,7 +164,7 @@ class Recorder:
         inst_addr = f"0x{inst_addr:08x}"
         inst_opcode = inst_opcode.hex()
         inst_opcode = " ".join(a+b for a, b in zip(inst_opcode[::2], inst_opcode[1::2]))
-        self._trace["instructions"].append([inst_addr, inst_opcode, inst_disassembly, inst_comment])
+        self._trace["trace"]["instructions"].append([inst_addr, inst_opcode, inst_disassembly, inst_comment])
         inst_line = [f"{inst_addr:s} ({inst_opcode:s}): {inst_disassembly:s}", f"# {inst_comment:s}"]
         self._logger.debug("".join(item.ljust(80) for item in inst_line), color="cyan")
         return
@@ -183,4 +188,4 @@ class Recorder:
         return addr
 
     def get_instructions(self) -> Tuple[int, bytes, str, str]:
-        return self._trace["instructions"]
+        return self._trace["trace"]["instructions"]

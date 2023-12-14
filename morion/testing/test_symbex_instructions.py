@@ -22,13 +22,15 @@ class TestA32instIT(TestSymbex):
                     'addr': '0x1010'
                 }
             },
-            'instructions': [
-                ['0x1000', '88 42',       'cmp r0, r1', ''],
-                ['0x1002', '0c bf',       'ite eq',     ''],
-                ['0x1004', '4f f0 02 02', 'mov r2, #2', '// eq'],
-                ['0x1008', '4f f0 03 02', 'mov r2, #3', '// ne'],
-                ['0x100c', '4f f0 04 03', 'mov r3, #4', '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x1000', '88 42',       'cmp r0, r1', ''],
+                    ['0x1002', '0c bf',       'ite eq',     ''],
+                    ['0x1004', '4f f0 02 02', 'mov r2, #2', '// eq'],
+                    ['0x1008', '4f f0 03 02', 'mov r2, #3', '// ne'],
+                    ['0x100c', '4f f0 04 03', 'mov r3, #4', '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -76,15 +78,17 @@ class TestA32instIT(TestSymbex):
                     'addr': '0x1018'
                 }
             },
-            'instructions': [
-                ['0x1000', '88 42',       'cmp r0, r1', ''],
-                ['0x1002', '15 bf',       'itete ne',   ''],
-                ['0x1004', '4f f0 02 02', 'mov r2, #2', '// ne'],
-                ['0x1008', '4f f0 03 02', 'mov r2, #3', '// eq'],
-                ['0x100c', '4f f0 04 03', 'mov r3, #4', '// ne'],
-                ['0x1010', '4f f0 05 03', 'mov r3, #5', '// eq'],
-                ['0x1014', '4f f0 06 04', 'mov r4, #6', '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x1000', '88 42',       'cmp r0, r1', ''],
+                    ['0x1002', '15 bf',       'itete ne',   ''],
+                    ['0x1004', '4f f0 02 02', 'mov r2, #2', '// ne'],
+                    ['0x1008', '4f f0 03 02', 'mov r2, #3', '// eq'],
+                    ['0x100c', '4f f0 04 03', 'mov r3, #4', '// ne'],
+                    ['0x1010', '4f f0 05 03', 'mov r3, #5', '// eq'],
+                    ['0x1014', '4f f0 06 04', 'mov r4, #6', '']
+                ]
+            }
         })
 
         # Run symbolic execution

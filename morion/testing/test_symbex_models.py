@@ -42,28 +42,30 @@ class TestModelLibcFgets(TestSymbex):
                     'addr': '0x00cfe8'
                 }
             },
-            'instructions': [
-                ['0x00cfe0', '06 d0 ff ea', 'b #-0xbfe0',       '// Hook: libc:fgets (on=entry, mode=model)'],
-                ['0x001000', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001014', '15 01 0c e3', 'mov  r0, #0xc115', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001028', '16 01 0c e3', 'mov  r0, #0xc116', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001030', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x00103c', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x001044', 'e6 2f 00 ea', 'b #0xbfa0',        '// Hook: libc:fgets (on=leave, mode=model)'],
-                ['0x00cfe4', '00 f0 20 e3', 'nop',              '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x00cfe0', '06 d0 ff ea', 'b #-0xbfe0',       '// Hook: libc:fgets (on=entry, mode=model)'],
+                    ['0x001000', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001014', '15 01 0c e3', 'mov  r0, #0xc115', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001028', '16 01 0c e3', 'mov  r0, #0xc116', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001030', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x00103c', '14 01 0c e3', 'mov  r0, #0xc114', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x001044', 'e6 2f 00 ea', 'b #0xbfa0',        '// Hook: libc:fgets (on=leave, mode=model)'],
+                    ['0x00cfe4', '00 f0 20 e3', 'nop',              '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -139,13 +141,15 @@ class TestModelLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
-                ['0x000100', '00 00 a0 e3', 'mov  r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
+                    ['0x000100', '00 00 a0 e3', 'mov  r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -202,13 +206,15 @@ class TestModelLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
+                    ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -304,13 +310,15 @@ class TestModelLibcMemcmp(TestSymbex):
                     'addr': '0x4006ac'
                 }
             },
-            'instructions': [
-                ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
-                ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
-                ['0x4006a8', '00 f0 20 e3', 'nop',           '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x4006a4', '95 fe ef ea', 'b #-0x4005a4',  '// Hook: libc:memcmp (on=entry, mode=model)'],
+                    ['0x000100', '02 00 a0 e3', 'mov  r0, #0x2', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000104', '00 00 40 e3', 'movt r0, #0x0', '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x000108', '66 01 10 ea', 'b #0x4005a0',   '// Hook: libc:memcmp (on=leave, mode=model)'],
+                    ['0x4006a8', '00 f0 20 e3', 'nop',           '']
+                ]   
+            }
         })
 
         # Run symbolic execution
@@ -400,43 +408,45 @@ class TestModelLibcSscanf(TestSymbex):
                     'addr': '0x00d004'
                 }
             },
-            'instructions': [
-                ['0x00cffc', 'ff cf ff ea', 'b #-0xbffc',       '// Hook: libc:sscanf (on=entry, mode=model)'],
-                ['0x001000', '04 07 0c e3', 'mov  r0, #0xc704', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001014', '05 07 0c e3', 'mov  r0, #0xc705', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001028', '06 07 0c e3', 'mov  r0, #0xc706', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001030', '43 10 a0 e3', 'mov  r1, #0x43',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00103c', '07 07 0c e3', 'mov  r0, #0xc707', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001044', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001048', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00104c', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001050', '04 06 0c e3', 'mov  r0, #0xc604', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001054', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001058', '45 10 a0 e3', 'mov  r1, #0x45',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00105c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001060', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001064', '05 06 0c e3', 'mov  r0, #0xc605', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001068', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00106c', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001070', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001074', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001078', '02 00 a0 e3', 'mov  r0, #0x2',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00107c', '00 00 40 e3', 'movt r0, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001080', 'de 2f 00 ea', 'b #0xbf80',        '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00d000', '00 f0 20 e3', 'nop',              '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x00cffc', 'ff cf ff ea', 'b #-0xbffc',       '// Hook: libc:sscanf (on=entry, mode=model)'],
+                    ['0x001000', '04 07 0c e3', 'mov  r0, #0xc704', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001014', '05 07 0c e3', 'mov  r0, #0xc705', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001028', '06 07 0c e3', 'mov  r0, #0xc706', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001030', '43 10 a0 e3', 'mov  r1, #0x43',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00103c', '07 07 0c e3', 'mov  r0, #0xc707', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001044', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001048', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00104c', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001050', '04 06 0c e3', 'mov  r0, #0xc604', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001054', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001058', '45 10 a0 e3', 'mov  r1, #0x45',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00105c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001060', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001064', '05 06 0c e3', 'mov  r0, #0xc605', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001068', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00106c', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001070', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001074', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001078', '02 00 a0 e3', 'mov  r0, #0x2',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00107c', '00 00 40 e3', 'movt r0, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001080', 'de 2f 00 ea', 'b #0xbf80',        '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00d000', '00 f0 20 e3', 'nop',              '']
+                ]
+            }
         })
 
         # Run symbolic execution
@@ -580,43 +590,45 @@ class TestModelLibcSscanf(TestSymbex):
                     'addr': '0x00d004'
                 }
             },
-            'instructions': [
-                ['0x00cffc', 'ff cf ff ea', 'b #-0xbffc',       '// Hook: libc:sscanf (on=entry, mode=model)'],
-                ['0x001000', '04 07 0c e3', 'mov  r0, #0xc704', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001014', '05 07 0c e3', 'mov  r0, #0xc705', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001028', '06 07 0c e3', 'mov  r0, #0xc706', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001030', '43 10 a0 e3', 'mov  r1, #0x43',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00103c', '07 07 0c e3', 'mov  r0, #0xc707', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001044', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001048', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00104c', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001050', '04 06 0c e3', 'mov  r0, #0xc604', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001054', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001058', '45 10 a0 e3', 'mov  r1, #0x45',   '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00105c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001060', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001064', '05 06 0c e3', 'mov  r0, #0xc605', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001068', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00106c', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001070', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001074', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001078', '02 00 a0 e3', 'mov  r0, #0x2',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00107c', '00 00 40 e3', 'movt r0, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x001080', 'de 2f 00 ea', 'b #0xbf80',        '// Hook: libc:sscanf (on=leave, mode=model)'],
-                ['0x00d000', '00 f0 20 e3', 'nop',              '']
-            ]
+            'trace': {
+                'instructions': [
+                    ['0x00cffc', 'ff cf ff ea', 'b #-0xbffc',       '// Hook: libc:sscanf (on=entry, mode=model)'],
+                    ['0x001000', '04 07 0c e3', 'mov  r0, #0xc704', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001004', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001008', '41 10 a0 e3', 'mov  r1, #0x41',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00100c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001010', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001014', '05 07 0c e3', 'mov  r0, #0xc705', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001018', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00101c', '42 10 a0 e3', 'mov  r1, #0x42',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001020', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001024', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001028', '06 07 0c e3', 'mov  r0, #0xc706', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00102c', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001030', '43 10 a0 e3', 'mov  r1, #0x43',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001034', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001038', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00103c', '07 07 0c e3', 'mov  r0, #0xc707', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001040', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001044', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001048', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00104c', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001050', '04 06 0c e3', 'mov  r0, #0xc604', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001054', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001058', '45 10 a0 e3', 'mov  r1, #0x45',   '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00105c', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001060', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001064', '05 06 0c e3', 'mov  r0, #0xc605', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001068', 'ff 0e 4b e3', 'movt r0, #0xbeff', '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00106c', '00 10 a0 e3', 'mov  r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001070', '00 10 40 e3', 'movt r1, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001074', '00 10 c0 e5', 'strb r1, [r0]',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001078', '02 00 a0 e3', 'mov  r0, #0x2',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00107c', '00 00 40 e3', 'movt r0, #0x0',    '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x001080', 'de 2f 00 ea', 'b #0xbf80',        '// Hook: libc:sscanf (on=leave, mode=model)'],
+                    ['0x00d000', '00 f0 20 e3', 'nop',              '']
+                ]
+            }
         })
 
         # Run symbolic execution
