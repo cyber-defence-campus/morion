@@ -5,6 +5,8 @@ import importlib
 import inspect
 import os
 import pkgutil
+import re
+import string
 import sys
 from   morion.interact                      import Shell
 from   morion.log                           import Logger
@@ -47,61 +49,67 @@ class Executor:
         else:
             self._logger.critical(f"Architecture '{arch:s}' not supported.")
             sys.exit("Unsupported architecture.")
-        # Set concrete register values
-        self._logger.debug("Concrete Regs:")
-        regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {})
+        # Setup registers
+        self._logger.debug("Regs:")
+        regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {}).copy()
         for reg_name, reg_values in regs.items():
+            reg_name = str(reg_name)
+            if not isinstance(reg_values, list): reg_values = [reg_values]
+            # Access register
             try:
                 reg = self.ctx.getRegister(reg_name)
-                if not isinstance(reg_values, list): reg_values = [reg_values]
-                for reg_value in reg_values:
-                    if not isinstance(reg_value, int):
-                        reg_value = int(reg_value, base=0)
+            except:
+                self._logger.warning(f"Failed to access register with name '{reg_name:s}'")
+                continue
+            # Set concrete register values
+            for reg_value in reg_values:
+                try:
+                    reg_value = str(reg_value)
+                    reg_value = int(reg_value, base=0)
                     self.ctx.setConcreteRegisterValue(reg, reg_value)
                     self._logger.debug(f"\t{reg_name:s}=0x{reg_value:x}")
-            except:
-                continue
-        # Set concrete memory values
-        self._logger.debug("Concrete Mems:")
-        mems = self._recorder._trace.get("states", {}).get("entry", {}).get("mems", {})
+                except Exception as e:
+                    if not reg_value == "$$":
+                        self._logger.warning(f"Failed to set register '{reg_name}': {str(e):s}")
+            # Make register symbolic
+            if "$$" in reg_values:
+                try:
+                    self.ctx.symbolizeRegister(reg, SymbexHelper.create_symvar_alias(reg_name=reg_name))
+                    self._logger.debug(f"\t{reg_name:s}=$$")
+                except Exception as e:
+                    self._logger.warning(f"Failed to symbolize register '{reg_name:s}': {str(e):s}")
+        # Setup memory
+        self._logger.debug("Mems:")
+        mems = self._recorder._trace.get("states", {}).get("entry", {}).get("mems", {}).copy()
         for mem_addr, mem_values in mems.items():
+            mem_addr = str(mem_addr)
+            if not isinstance(mem_values, list): mem_values = [mem_values]
+            # Parse memory address
             try:
-                if not isinstance(mem_addr, int):
-                    mem_addr = int(mem_addr, base=0)
-                if not isinstance(mem_values, list): mem_values = [mem_values]
-                for mem_value in mem_values:
-                    if not isinstance(mem_value, int):
-                        mem_value = int(mem_value, base=0)
+                mem_addr = SymbexHelper.parse_memory_address(mem_addr, self.ctx)
+            except Exception as e:
+                self._logger.warning(f"Failed to parse memory address '{mem_addr:s}': {str(e):s}")
+                continue
+            # Set concrete memory values
+            for mem_value in mem_values:
+                try:
+                    mem_value = str(mem_value)
+                    mem_value = int(mem_value, base=0)
                     mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                     self.ctx.setConcreteMemoryValue(mem_addr, mem_value)
                     self._logger.debug(f"\t0x{mem_addr:08x}=0x{mem_value:02x} {mem_value_chr:s}")
-            except:
-                continue
-        # Set symbolic register values
-        self._logger.debug("Symbolic Regs:")
-        for reg_name, reg_values in regs.items():
-            try:
-                reg = self.ctx.getRegister(reg_name)
-                if not isinstance(reg_values, list): reg_values = [reg_values]
-                if "$$" in reg_values:
-                    self.ctx.symbolizeRegister(reg, SymbexHelper.create_symvar_alias(reg_name=reg_name))
-                    self._logger.debug(f"\t{reg_name:s}=$$")
-            except:
-                continue
-        # Set symbolic memory values
-        self._logger.debug("Symbolic Mems:")
-        for mem_addr, mem_values in mems.items():
-            try:
-                if not isinstance(mem_addr, int):
-                    mem_addr = int(mem_addr, base=0)
-                if not isinstance(mem_values, list): mem_values = [mem_values]                
-                if "$$" in mem_values:
+                except Exception as e:
+                    if not mem_value == "$$":
+                        self._logger.warning(f"Failed to set memory at address '0x{mem_addr:08x}': {str(e):s}")
+            # Set symbolic memory values
+            if "$$" in mem_values:
+                try:
                     mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
                     self.ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=mem_addr))
                     self._logger.debug(f"\t0x{mem_addr:08x}=$$")
-            except:
-                continue
-        # Set hooks
+                except Exception as e:
+                    self._logger.warning(f"Failed to symbolize memory at address '0x{mem_addr:08x}': {str(e):s}")
+        # Setup hooks
         self._logger.debug("Hooks:")
         hooks = self._recorder._trace.get("hooks", {})
         if hooks is None: hooks = {}

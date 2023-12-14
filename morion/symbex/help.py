@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 ## -*- coding: utf-8 -*-
 import re
+import string
+from   triton import TritonContext
 from   typing import Tuple
 
 
@@ -80,3 +82,42 @@ class SymbexHelper:
                 mems.update({f"0x{mem_addr:08x}": (value, inst_cnt, info)})
                 m.update({"mems": mems})
         return m
+    
+    @staticmethod
+    def parse_memory_address(mem_addr: object, ctx: TritonContext) -> int:
+        """Helper function that parses memory addresses. It supports memory addresses calculated
+        based on register values (see examples below).
+
+        Examples:
+            - 0                 (decimal integer)
+            - 0x00              (hexadecimal integer)
+            - '0x00'            (hexadecimal integer as string)
+            - '[sp+0]'          (single register with decimal offset)
+            - '[sp-0x0]'        (single register with hexadecimal offset)
+            - '[sp+4-fp-0x0]'   (multiple registers/offsets)
+        """
+        mem_addr_int = 0
+        mem_addr_str = str(mem_addr)
+        try:
+            mem_addr_int = int(mem_addr_str, base=0)
+        except:
+            mem_addr_str = mem_addr_str.translate({ord(c): None for c in string.whitespace})
+            m = re.fullmatch(r"\[([^\]]+)\]", mem_addr_str)
+            if m is None:
+                raise Exception(f"Failed to parse memory address '{mem_addr_str:s}'")
+            terms = [m for m in re.finditer(r"([+-])?([^+-]+)", m.group(1), flags=re.VERBOSE)]
+            for term in terms:
+                sign, term = term.groups()
+                try:
+                    value = int(term, base=0)
+                except:
+                    try:
+                        reg = ctx.getRegister(term)
+                        value = ctx.getConcreteRegisterValue(reg)
+                    except Exception as e:
+                        raise Exception(f"Failed to parse memory address '{mem_addr_str:s}': {str(e):s}")
+                if sign == "-":
+                    mem_addr_int -= value
+                else:
+                    mem_addr_int += value
+        return mem_addr_int

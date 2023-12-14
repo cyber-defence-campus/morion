@@ -7,7 +7,7 @@ from   morion.log                           import Logger
 from   morion.symbex.analysis.vulnerability import VulnerabilityAnalysis
 from   morion.symbex.tools.execute          import Executor
 from   morion.symbex.help                   import SymbexHelper
-from   triton                               import CPUSIZE, Instruction, MemoryAccess, TritonContext
+from   triton                               import CPUSIZE, MemoryAccess
 
 
 class ROPGenerator(Executor):
@@ -65,35 +65,41 @@ class ROPGenerator(Executor):
             if inst_address != pc:
                 self._logger.error(f"Address (0x{inst_address:08x}) of instruction {element_id:d} in ROP chain '{rop_chain:s}' is not aligned with the PC (0x{pc:08x}).")
                 return {}
-            # Load preconditons
+            # Load preconditions
             self._logger.info(f"Start loading preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             path_constraints = VulnerabilityAnalysis.get_path_constraints(self.ctx, False)
             constraints = [path_constraints]
             self._logger.debug("Regs:")
             for reg_name, reg_value in reg_preconditions.items():
+                reg_name = str(reg_name)
+                reg_value = str(reg_value)
                 try:
-                    if not isinstance(reg_value, int):
-                        reg_value = int(reg_value, base=0)
                     reg = self.ctx.getRegister(reg_name)
                     reg_ast = self.ctx.getRegisterAst(reg)
-                except:
-                    self._logger.warning(f"Failed to parse register precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
+                    reg_value = int(reg_value, base=0)
+                    constraints.append(reg_ast == reg_value)
+                    self._logger.debug(f"\t{reg_name:s} == 0x{reg_value:08x}")
+                except Exception as e:
+                    self._logger.warning(f"Failed to load precondition of register '{reg_name:s}': {str(e):s}")
                     continue
-                constraints.append(reg_ast == reg_value)
-                self._logger.debug(f"\t{reg_name:s} == 0x{reg_value:08x}")
             self._logger.debug("Mems:")
             for mem_addr, mem_value in mem_preconditions.items():
+                mem_addr = str(mem_addr)
+                mem_value = str(mem_value)
                 try:
-                    if not isinstance(mem_addr, int):
-                        mem_addr = int(mem_addr, base=0)
-                    if not isinstance(mem_value, int):
-                        mem_value = int(mem_value, base=0)
-                    mem_ast = self.ctx.getMemoryAst(MemoryAccess(mem_addr, CPUSIZE.BYTE))
-                except:
-                    self._logger.warning(f"Failed to parse memory precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
+                    mem_addr = SymbexHelper.parse_memory_address(mem_addr, self.ctx)
+                except Exception as e:
+                    self._logger.warning(f"Failed to parse memory address '{mem_addr:s}': {str(e):s}")
                     continue
-                constraints.append(mem_ast == mem_value)
-                self._logger.debug(f"\t0x{mem_addr:08x} == 0x{mem_value:02x}")
+                try:
+                    mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
+                    mem_ast = self.ctx.getMemoryAst(mem)
+                    mem_value = int(mem_value, base=0)
+                    constraints.append(mem_ast == mem_value)
+                    self._logger.debug(f"\t0x{mem_addr:08x} == 0x{mem_value:02x}")
+                except Exception as e:
+                    self._logger.warning(f"Failed to load precondition of memory address '0x{mem_addr:08x}': {str(e):s}")
+                    continue
             self._logger.info(f"... finished loading preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
             # Solve preconditions
             self._logger.info(f"Start solving preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
@@ -137,42 +143,39 @@ class ROPGenerator(Executor):
             self._logger.info(f"Start concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             self._logger.debug("Regs:")
             for reg_name, reg_value in reg_preconditions.items():
-                try:
-                    if not isinstance(reg_value, int):
-                        reg_value = int(reg_value, base=0)
-                except:
-                    self._logger.warning(f"Failed to parse register precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
-                    continue
+                reg_name = str(reg_name)
+                reg_value = str(reg_value)
                 try:
                     reg = self.ctx.getRegister(reg_name)
                     reg_ast = self.ctx.getRegisterAst(reg)
+                    reg_value = int(reg_value, base=0)
                     self.ctx.setConcreteRegisterValue(reg, reg_value)
                     self.ctx.concretizeRegister(reg)
                     self.ctx.pushPathConstraint(reg_ast == reg_value)
-                except:
-                    self._logger.warning(f"Failed to concretize register '{reg_name:s}'.")
+                    self._logger.debug(f"\t{reg_name:s}: 0x{reg_value:08x}")
+                except Exception as e:
+                    self._logger.warning(f"Failed to concretize precondition of register '{reg_name:s}': {str(e):s}")
                     continue
-                self._logger.debug(f"\t{reg_name:s}: 0x{reg_value:08x}")
             self._logger.debug("Mems:")
             for mem_addr, mem_value in mem_preconditions.items():
+                mem_addr = str(mem_addr)
+                mem_value = str(mem_value)
                 try:
-                    if not isinstance(mem_addr, int):
-                        mem_addr = int(mem_addr, base=0)
-                    if not isinstance(mem_value, int):
-                        mem_value = int(mem_value, base=0)
-                except:
-                    self._logger.warning(f"Failed to parse memory precondition of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
+                    mem_addr = SymbexHelper.parse_memory_address(mem_addr, self.ctx)
+                except Exception as e:
+                    self._logger.warning(f"Failed to parse memory address '{mem_addr:s}': {str(e):s}")
                     continue
                 try:
                     mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
                     mem_ast = self.ctx.getMemoryAst(mem)
+                    mem_value = int(mem_value, base=0)
                     self.ctx.setConcreteMemoryValue(mem, mem_value)
                     self.ctx.concretizeMemory(mem)
                     self.ctx.pushPathConstraint(mem_ast == mem_value)
-                except:
-                    self._logger.warning(f"Failed to concretize memory '0x{mem_addr:08x}'.")
+                    self._logger.debug(f"\t0x{mem_addr:08x}: 0x{mem_value:02x}")
+                except Exception as e:
+                    self._logger.warning(f"Failed to concretize precondition of memory address '0x{mem_addr:08x}': {str(e):s}")
                     continue
-                self._logger.debug(f"\t0x{mem_addr:08x}: 0x{mem_value:02x}")
             self._logger.info(f"... finished concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
             # Symbolic execution of instruction
             self._logger.info(f"Start symbolic execution of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")

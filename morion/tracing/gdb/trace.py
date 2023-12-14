@@ -6,6 +6,7 @@ import inspect
 import os
 import pkgutil
 import re
+import string
 import sys
 from   morion.log         import Logger
 from   morion.map         import AddressMapper
@@ -122,6 +123,44 @@ class GdbHelper:
             s += b
             mem_addr += 1
         return s
+
+    @staticmethod
+    def parse_memory_address(mem_addr: object) -> int:
+        """Helper function that parses memory addresses. It supports memory addresses calculated
+        based on register values (see examples below).
+
+        Examples:
+            - 0                 (decimal integer)
+            - 0x00              (hexadecimal integer)
+            - '0x00'            (hexadecimal integer as string)
+            - '[sp+0]'          (single register with decimal offset)
+            - '[sp-0x0]'        (single register with hexadecimal offset)
+            - '[sp+4-fp-0x0]'   (multiple registers/offsets)
+        """
+        mem_addr_int = 0
+        mem_addr_str = str(mem_addr)
+        try:
+            mem_addr_int = int(mem_addr_str, base=0)
+        except:
+            mem_addr_str = mem_addr_str.translate({ord(c): None for c in string.whitespace})
+            m = re.fullmatch(r"\[([^\]]+)\]", mem_addr_str)
+            if m is None:
+                raise Exception(f"Failed to parse memory address '{mem_addr_str:s}'")
+            terms = [m for m in re.finditer(r"([+-])?([^+-]+)", m.group(1), flags=re.VERBOSE)]
+            for term in terms:
+                sign, term = term.groups()
+                try:
+                    value = int(term, base=0)
+                except:
+                    try:
+                        value = GdbHelper.get_register_value(term)
+                    except Exception as e:
+                        raise Exception(f"Failed to parse memory address '{mem_addr_str:s}': {str(e):s}")
+                if sign == "-":
+                    mem_addr_int -+ value
+                else:
+                    mem_addr_int += value
+        return mem_addr_int
 
     @staticmethod
     def get_instruction(addr: int = None) -> Tuple[int, bytes, str]:
@@ -285,12 +324,6 @@ class GdbTracer:
                 logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: {res:d}")
                 return False
             return True
-            # try:
-            #     supported = ctx.buildSemantics(inst) == EXCEPTION.NO_FAULT
-            # except Exception as e:
-            #     logger.error(f"Failed to build semantics for the instruction at address 0x{inst.getAddress():08x}: '{str(e):s}'")
-            #     return False
-            # return supported
 
         def record_reg_mem_accesses(inst: Instruction, code: str = "") -> Tuple[bool, TritonContext]:
             # Create fresh context
@@ -419,7 +452,7 @@ class GdbTracer:
 
             # Store accessed memory at leave
             for mem_addr, _ in self._recorder._trace["states"]["entry"]["mems"].items():
-                mem_addr = int(mem_addr, base=16)
+                mem_addr = int(mem_addr, base=0)
                 mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
                 self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=False)
 
@@ -438,51 +471,60 @@ class GdbTracer:
             return False
         # Empty instructions
         self._recorder._trace["instructions"] = []
-        # Set register values
+        # Setup registers
         logger.debug("Regs:")
-        entry_regs = self._recorder._trace["states"]["entry"]["regs"].copy()
-        for reg_name, reg_values in entry_regs.items():
+        regs = self._recorder._trace.get("states", {}).get("entry", {}).get("regs", {}).copy()
+        for reg_name, reg_values in regs.items():
+            reg_name = str(reg_name)
+            if not isinstance(reg_values, list): reg_values = [reg_values]
+            # Set concrete register values
             for reg_value in reg_values:
                 try:
-                    reg_value = int(reg_value, base=16)
+                    reg_value = str(reg_value)
+                    reg_value = int(reg_value, base=0)
                     GdbHelper.set_register_value(reg_name, reg_value)
+                    logger.debug(f"\t{reg_name:s}=0x{reg_value:x}")
                 except Exception as e:
                     if not reg_value == "$$":
-                        logger.warning(f"Failed to set register {reg_name:s}: {str(e):s}")
+                        logger.warning(f"Failed to set register '{reg_name:s}': {str(e):s}")
+            # Record register accesses
             try:
                 reg_value = GdbHelper.get_register_value(reg_name)
                 self._accessed_regs[reg_name] = reg_value
                 self._recorder.add_concrete_register(reg_name, reg_value, is_entry=True)
-                logger.debug(f"\t{reg_name:s} = 0x{reg_value:x}")
             except Exception as e:
-                logger.warning(f"Failed to read register {reg_name:s}: {str(e):s}")
-
-        # Set memory values
+                logger.warning(f"Failed to record register '{reg_name:s}': {str(e):s}")
+        # Setup memory
         logger.debug("Mems:")
-        entry_mems = self._recorder._trace["states"]["entry"]["mems"].copy()
-        for mem_addr, mem_values in entry_mems.items():
+        mems = self._recorder._trace.get("states", {}).get("entry", {}).get("mems", {}).copy()
+        for mem_addr, mem_values in mems.items():
+            mem_addr = str(mem_addr)
+            if not isinstance(mem_values, list): mem_values = [mem_values]
+            # Parse memory address
             try:
-                mem_addr = int(mem_addr, base=16)
+                mem_addr = GdbHelper.parse_memory_address(mem_addr)
             except Exception as e:
-                logger.warning(f"Invalid memory address: {str(e):s}")
+                logger.warning(f"Failed to parse memory address '{mem_addr:s}': {str(e):s}")
                 continue
+            # Set concrete memory values
             for mem_value in mem_values:
                 try:
-                    mem_value = int(mem_value, base=16)
+                    mem_value = str(mem_value)
+                    mem_value = int(mem_value, base=0)
+                    mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                     GdbHelper.set_memory_value(mem_addr, mem_value)
+                    logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
                 except Exception as e:
                     if not mem_value == "$$":
                         logger.warning(f"Failed to set memory at address 0x{mem_addr:08x}: {str(e):s}")
+            # Record memory accesses
             try:
                 mem_value = GdbHelper.get_memory_value(mem_addr, CPUSIZE.BYTE)
-                mem_value_chr = chr(mem_value) if 33 <= mem_value <= 126 else ' '
                 self._accessed_mems[mem_addr] = mem_value
                 self._recorder.add_concrete_memory(mem_addr, mem_value, is_entry=True)
-                logger.debug(f"\t0x{mem_addr:08x} = 0x{mem_value:02x} {mem_value_chr:s}")
             except Exception as e:
-                logger.warning(f"Failed to read memory at addrss 0x{mem_addr:08x}: {str(e):s}")
-                
-        # Set hooks
+                logger.warning(f"Failed to record memory at address 0x{mem_addr:08x}: {str(e):s}")
+        # Setup hooks
         logger.debug("Hooks:")
         hooks = self._recorder._trace.get("hooks", {})
         if hooks is None: hooks = {}
@@ -493,9 +535,9 @@ class GdbTracer:
                 for addr in addrs:
                     if addr is None: addr = {}
                     try:
-                        entry  = int(addr["entry"], base=16)
-                        leave  = int(addr["leave"], base=16)
-                        target = int(addr["target"], base=16)
+                        entry  = int(addr["entry"], base=0)
+                        leave  = int(addr["leave"], base=0)
+                        target = int(addr["target"], base=0)
                         mode   = addr.get("mode", "skip").lower()
                     except:
                         logger.warning(f"Failed to register hook '{lib:s}:{fun:s}': invalid parameter")
