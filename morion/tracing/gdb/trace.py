@@ -70,7 +70,7 @@ class GdbHelper:
     def set_register_value(reg_name: str, reg_value: int) -> None:
         gdb.parse_and_eval(f"${reg_name:s} = {reg_value:d}")
         return
-    
+
     @staticmethod
     def get_memory_bytes(mem_addr: int, mem_size: int = CPUSIZE.QWORD) -> bytes:
         v = b""
@@ -514,7 +514,7 @@ class GdbTracer:
                     GdbHelper.set_register_value(reg_name, reg_value)
                     logger.debug(f"\t{reg_name:s}=0x{reg_value:x}")
                 except Exception as e:
-                    if not reg_value == "$$":
+                    if not "$$" in reg_value:
                         logger.warning(f"Failed to set register '{reg_name:s}': {str(e):s}")
             # Record register accesses
             try:

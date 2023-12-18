@@ -117,26 +117,30 @@ class Recorder:
     def add_concrete_register(self, reg_name: str, reg_value: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
         old_reg_values = self._trace["states"][state]["regs"].get(reg_name, [])
+        if not isinstance(old_reg_values, list): old_reg_values = [old_reg_values]
+        old_reg_values_symbolic = [v for v in old_reg_values if "$$" in v]
         new_reg_values = [f"0x{reg_value:08x}"]
-        if "$$" in old_reg_values:
-            new_reg_values.append("$$")
+        if len(old_reg_values_symbolic) > 0:
+            new_reg_values.append(old_reg_values_symbolic[-1])
         self._trace["states"][state]["regs"][reg_name] = new_reg_values
         return
 
-    def add_symbolic_register(self, reg_name: str, is_entry: bool = True) -> None:
+    def add_symbolic_register(self, reg_name: str, reg_size: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
         old_reg_values = self._trace["states"][state]["regs"].get(reg_name, [])
-        old_reg_values_concrete = [v for v in old_reg_values if not v == "$$"]
+        if not isinstance(old_reg_values, list): old_reg_values = [old_reg_values]
+        old_reg_values_concrete = [v for v in old_reg_values if not "$$" in v]
         new_reg_values = []
         if len(old_reg_values_concrete) > 0:
             new_reg_values.append(old_reg_values_concrete[-1])
-        new_reg_values.append("$$")
+        new_reg_values.append("$$"*reg_size)
         self._trace["states"][state]["regs"][reg_name] = new_reg_values
         return
 
     def add_concrete_memory(self, mem_addr: int, mem_value: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
         old_mem_values = self._trace["states"][state]["mems"].get(f"0x{mem_addr:x}", [])
+        if not isinstance(old_mem_values, list): old_mem_values = [old_mem_values]
         if old_mem_values:
             del self._trace["states"][state]["mems"][f"0x{mem_addr:x}"]
         old_mem_values.extend(self._trace["states"][state]["mems"].get(f"0x{mem_addr:08x}", []))
@@ -149,10 +153,11 @@ class Recorder:
     def add_symbolic_memory(self, mem_addr: int, is_entry: bool = True) -> None:
         state = "entry" if is_entry else "leave"
         old_mem_values = self._trace["states"][state]["mems"].get(f"0x{mem_addr:x}", [])
+        if not isinstance(old_mem_values, list): old_mem_values = [old_mem_values]
         if old_mem_values:
             del self._trace["states"][state]["mems"][f"0x{mem_addr:x}"]
         old_mem_values.extend(self._trace["states"][state]["mems"].get(f"0x{mem_addr:08x}", []))
-        old_mem_values_concrete = [v for v in old_mem_values if not v == "$$"]
+        old_mem_values_concrete = [v for v in old_mem_values if not "$$" in v]
         new_mem_values = []
         if len(old_mem_values_concrete) > 0:
             new_mem_values.append(old_mem_values_concrete[-1])

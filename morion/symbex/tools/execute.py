@@ -75,13 +75,14 @@ class Executor:
                     self.ctx.setConcreteRegisterValue(reg, reg_value)
                     self._logger.debug(f"\t{reg_name:s}=0x{reg_value:x}")
                 except Exception as e:
-                    if not reg_value == "$$":
+                    if not "$$" in reg_value:
                         self._logger.warning(f"Failed to set register '{reg_name}': {str(e):s}")
             # Make register symbolic
-            if "$$" in reg_values:
+            if any("$$" in str(reg_value) for reg_value in reg_values):
                 try:
+                    reg_size = reg.getSize()
                     self.ctx.symbolizeRegister(reg, SymbexHelper.create_symvar_alias(reg_name=reg_name))
-                    self._logger.debug(f"\t{reg_name:s}=$$")
+                    self._logger.debug(f"\t{reg_name:s}={'$$'*reg_size}")
                 except Exception as e:
                     self._logger.warning(f"Failed to symbolize register '{reg_name:s}': {str(e):s}")
         # Setup memory
@@ -313,7 +314,7 @@ class Executor:
             is_symbolic = "$$" in reg_mask
             self._recorder.add_concrete_register(reg_name, reg_value, is_entry=False)
             if is_symbolic:
-                self._recorder.add_symbolic_register(reg_name, is_entry=False)
+                self._recorder.add_symbolic_register(reg_name, len(byte_mask), is_entry=False)
                 self._logger.info(f"\t{reg_name:s}={reg_mask:s}", color="magenta")
         self._logger.info("Symbolic Mems:", color="magenta")
         mem_addrs = set()

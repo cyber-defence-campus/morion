@@ -46,7 +46,7 @@ class TestLoading(TestSymbex):
                         'ip' : '$$',
                         'r13': [0x01010101],
                         'lr' : ['0x01010101'],
-                        'r15': ['0x2000', '$$']
+                        'r15': ['0x2000', '$$$$$$$$']
                     },
                     'mems': {}
                 },
@@ -65,7 +65,7 @@ class TestLoading(TestSymbex):
         self.se.load(self.tf.name)
         self.se.run()
 
-        # TODO: Validate results
+        # Validate results
         reg_con = self.se.ctx.getConcreteRegisterValue(self.se.ctx.getRegister('r9'))
         reg_sym = self.se._is_register_symbolic('r9')
         self.assertEqual(reg_con, 0x01010101,   'r9 [concrete]')
@@ -110,13 +110,13 @@ class TestLoading(TestSymbex):
             'r12': '$$',
             'sp' : [0x01010101],
             'r14' : ['0x01010101'],
-            'pc' : ['0x2000', '$$']
+            'pc' : ['0x2000', '$$$$$$$$']
         }, 'states:entry:regs')
         self.assertEqual(regs_leave, {
             'r9' : ['0x01010101'],
             'r10': ['0x01010101'],
             'r11': ['0x01010101'],
-            'r12': ['0x00000000', '$$'],
+            'r12': ['0x00000000', '$$$$$$$$'],
             'sp' : ['0x01010101'],
             'r14': ['0x01010101'],
             'pc' : ['0x00002004']
