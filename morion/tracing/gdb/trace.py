@@ -566,7 +566,7 @@ class GdbTracer:
                     try:
                         entry  = int(addr["entry"], base=0)
                         leave  = int(addr["leave"], base=0)
-                        target = int(addr["target"], base=0)
+                        target = int(addr.get("target", "0x1000"), base=0)
                         mode   = addr.get("mode", "skip").lower()
                     except:
                         logger.warning(f"Failed to register hook '{lib:s}:{fun:s}': invalid parameter")
