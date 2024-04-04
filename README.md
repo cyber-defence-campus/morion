@@ -1,22 +1,22 @@
 # Morion
 **Morion** is a *proof-of-concept (PoC)* tool to experiment with **symbolic execution** and to
-research current limitation that this technique has when it comes to **real-world binaries**.
+research current limitations that this technique has when it comes to **real-world binaries**.
 *Morion* relies on [Triton](https://triton-library.github.io/) as its underlying symbolic execution
 engine and (currently) has the following features / limitations:
 - **Record** concrete execution traces of a target binary (potentially in cross-platform remote setups)
   - Record initial context (concrete initial values of all registers / memory cells accessed during the trace)
-  - Record sequence of assembly instructions executed by the trace (opcodes)
-  - Hooking / skipping of instruction sequences
+  - Record sequence of assembly instructions (executed by the trace)
+  - Hooking / skipping of instruction sequences or functions
 - **Analyze** collected program traces by executing them symbolically
   - Symbolic function modeling
-  - Analysis passes
+  - Different analysis passes
     - Calculating backward slices
     - Detecting control-flow / memory hijacking conditions
     - Reasoning about code coverage (branches / paths)
     - Assisting during ROP chains generation
 - *Morion* is currently limited to binaries of the **ARMv7** architecture
 
-The following figure provides a high-level overview about *Morion* and its two operation modes
+The following figure provides a high-level overview about *Morion* and its two modes of operation -
 **tracing** and **symbolic execution**:
 
 <figure>
