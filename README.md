@@ -24,15 +24,20 @@ The following figure provides a high-level overview about *Morion* and its two m
 </figure>
 
 ## Installation
+Note: The following installation instructions have only been tested on Ubuntu 20.04/22.04 LTS.
 ### Triton
 #### Dependencies
 ```shell
+# cmake gcc/g++
+sudo apt install cmake gcc g++
+
 # libcapstone
-curl -L https://github.com/capstone-engine/capstone/archive/refs/tags/4.0.2.tar.gz -o capstone.tar.gz
+curl -L https://github.com/capstone-engine/capstone/archive/refs/tags/5.0.1.tar.gz -o capstone.tar.gz
 tar -xvzf capstone.tar.gz && rm capstone.tar.gz
-mv capstone-4.0.2 Capstone && cd Capstone/
+mv capstone-5.0.1 capstone && cd capstone/
 ./make.sh
 sudo ./make.sh install
+cd ../
 
 # libboost, libpython and libz3
 sudo apt install libboost-all-dev libpython3-dev libz3-dev
@@ -44,6 +49,7 @@ mkdir build && cd build/
 cmake ..
 make -j4
 sudo make install
+cd ../../
 ```
 Note: The Triton library is put into `/usr/local/lib/python3.X/site-packages/`, which is the default location for non-Debian Python packages built from source. Debian-based systems by default put Python packages built from source into `/usr/local/lib/python3.X/dist-packages`. To cope with this, you might create the following link on Debian-based systems (here for Python version 3.10):
 ```shell
@@ -89,7 +95,6 @@ gdb -q -x morion/tracing/gdb/trace.py
 The `.gdbinit` file can be updated to automatically register Morion's tracing command at each launch of GDB:
 ```shell
 cat << EOF >> ~/.gdbinit
-
 # Register Morion's trace command 'morion_trace' with GDB 
 source $PWD/tracing/gdb/trace.py
 EOF
