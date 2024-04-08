@@ -24,7 +24,7 @@ The following figure provides a high-level overview about *Morion* and its two m
 </figure>
 
 ## Installation
-Note: The following installation instructions have only been tested on Ubuntu 20.04/22.04 LTS.
+**Note**: The following installation instructions have only been tested on Ubuntu 20.04/22.04 LTS.
 ### Triton
 #### Dependencies
 ```shell
