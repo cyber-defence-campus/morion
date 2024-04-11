@@ -1,4 +1,9 @@
 # Morion
+
+<p align="center">
+  <img src="./images/Morion_Logo.svg" alt="Morion Logo"/>
+</p>
+
 **Morion** is a *proof-of-concept (PoC)* tool to experiment with **symbolic execution** and to
 research current limitations that this technique has when it comes to **real-world binaries**.
 *Morion* relies on [Triton](https://triton-library.github.io/) as its underlying symbolic execution
