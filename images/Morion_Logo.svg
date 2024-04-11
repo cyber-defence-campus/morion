@@ -58,13 +58,13 @@
     </clipPath>
     <clipPath
        clipPathUnits="userSpaceOnUse"
-       id="clipPath1143">
+       id="clipPath1216">
       <circle
          style="display:inline;fill:#ff0000;stroke:#ff0000;stroke-width:0"
-         id="circle1145"
+         id="circle1218"
          cx="122.36753"
          cy="122.49757"
-         r="85.436897" />
+         r="82.826248" />
     </clipPath>
   </defs>
   <sodipodi:namedview
@@ -96,7 +96,7 @@
      transform="translate(-31.973251,-36.535589)">
     <g
        id="g4760"
-       clip-path="url(#clipPath1143)">
+       clip-path="url(#clipPath1216)">
       <rect
          style="fill:#c8beb7;stroke:#ff0000;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none"
          id="rect3602"
