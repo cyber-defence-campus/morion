@@ -136,7 +136,7 @@ class ROPGenerator(Executor):
                         payloads[cnt_inst] = payl
                         self._logger.debug(f"\t0x{mem_addr:08x}: 0x{value:02x} [inst:{cnt_inst:d}][mem][{mode:s}:{func:s}][var:{var_name:s}+{var_offs:d}]", color="green")
             else:
-                self._logger.debug(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' has no precondittions.")
+                self._logger.debug(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' has no preconditions.")
             self._logger.info(f"... finished solving preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
             # Concretize preconditions
             self._logger.info(f"Start concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
@@ -259,8 +259,8 @@ class ROPGenerator(Executor):
             # Print memory payload
             byte_groups = [mem_pay[b:b+bytes_per_line] for b in range(0, len(mem_pay), bytes_per_line)]
             if len(byte_groups) > 0:
-                for byte_group in byte_groups:
-                    self._logger.info(f"{' '.join(byte_group):s}", color="green", print_raw=True)
+                for i, byte_group in enumerate(byte_groups):
+                    self._logger.info(f"{n:s}+{i*bytes_per_line:04d}: {' '.join(byte_group):s}", color="green", print_raw=True)
                 self._logger.info("---", color="green", print_raw=True)
         self._logger.info("... finished dumping payloads.")
         return
