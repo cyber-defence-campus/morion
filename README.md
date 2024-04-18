@@ -1,7 +1,5 @@
 # Morion
 <!--TODO--------------------------------------------------------------------------------------------
-- [ ] Dependencies
-  - [ ] git, tmux, pwndbg
 --------------------------------------------------------------------------------------------------->
 
 <p align="center">
@@ -71,6 +69,12 @@ sudo ln -s\
 ```shell
 # GNU project debugger (for tracing)
 sudo apt install gdb gdb-multiarch
+
+# Optional, to use `morion_pwndbg`
+sudo apt install git tmux
+git clone https://github.com/pwndbg/pwndbg && cd pwndbg/
+./setup.sh
+cd ../
 ```
 #### Morion
 1. Clone the repository:
