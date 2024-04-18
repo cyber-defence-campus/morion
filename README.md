@@ -1,4 +1,8 @@
 # Morion
+<!--TODO--------------------------------------------------------------------------------------------
+- [ ] Dependencies
+  - [ ] git, tmux, pwndbg
+--------------------------------------------------------------------------------------------------->
 
 <p align="center">
   <img src="./images/Morion_Logo.svg" alt="Morion Logo"/>
@@ -86,9 +90,10 @@ sudo apt install gdb gdb-multiarch
       end
       EOF
       ```
-    - Create a virtual environment (with access to the system's site-packages to reach the Triton Python bindings)
+    - Create and activate a virtual environment with added Triton Python bindings:
       ```shell
-      python3 -mvenv venvs/morion --system-site-packages
+      python3 -mvenv venvs/morion
+      cp /usr/local/lib/python3.10/site-packages/triton.so venvs/morion/lib/python3.10/site-packages/triton.so
       source venvs/morion/bin/activate
       ```
 3. Install the package (add `-e` for editable mode):
