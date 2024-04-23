@@ -55,6 +55,18 @@ class inst_hook:
             self._logger.error(f"{self._name:s} (on=leave, mode={self._mode:s}) failed: {str(e):s}")
         return
 
+
+class func_hook(inst_hook):
+    """
+    Base class for hooking functions.
+    """
+
+    def __init__(self, name: str, entry_addr: int, leave_addr: int, mode: str = "skip", logger: Logger = Logger()) -> None:
+        super().__init__(name, entry_addr, leave_addr, mode, logger)
+        self.synopsis = "func_hook"
+        return
+
+
 # TODO: Use this to implement taint mode
 # class generic_hook(inst_hook):
 #     """

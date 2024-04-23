@@ -23,7 +23,6 @@ class ROPGenerator(Executor):
         super().load(trace_file)
         # Load ROP chain
         self._logger.info(f"Start loading ROP chain from file '{trace_file:s}'...")
-        # self._rop_chain = self._recorder._trace.get(rop_chain, [])
         rop_chains = self._recorder._trace.get("ropchains", {})
         if rop_chains is None: rop_chains = {}
         self._rop_chain = rop_chains.get(rop_chain, [])
@@ -113,31 +112,31 @@ class ROPGenerator(Executor):
                 for _, solver_model in model:
                     value = solver_model.getValue()
                     sym_var = solver_model.getVariable()
-                    inst_cnt, reg_name, mem_addr, info = SymbexHelper.parse_symvar_alias(sym_var.getAlias())
+                    cnt_inst, reg_name, mem_addr, mode, func, var_name, var_offs = SymbexHelper.parse_symvar_alias(sym_var.getAlias())
                     if reg_name:
                         solu_regs = solution.get("regs", {})
                         if solu_regs is None: solu_regs = {}
                         solu_regs[reg_name] = f"0x{value:08x}"
                         solution["regs"] = solu_regs
-                        payl = payloads.get(inst_cnt, {})
+                        payl = payloads.get(cnt_inst, {})
                         payl_regs = payl.get("regs", {})
-                        payl_regs[reg_name] = [f"0x{value:08x}", info]
+                        payl_regs[reg_name] = [f"0x{value:08x}", mode, func, var_name, var_offs]
                         payl["regs"] = payl_regs
-                        payloads[inst_cnt] = payl
-                        self._logger.debug(f"\t{reg_name:s}: 0x{value:08x} [INST:{inst_cnt:d}, {info:s}]", color="green")
+                        payloads[cnt_inst] = payl
+                        self._logger.debug(f"\t{reg_name:s}: 0x{value:08x} [inst:{cnt_inst:d}][reg][{mode:s}:{func:s}][var:{var_name:s}+{var_offs:d}]", color="green")
                     elif mem_addr:
                         solu_mems = solution.get("mems", {})
                         if solu_mems is None: solu_mems = {}
                         solu_mems[f"0x{mem_addr:08x}"] = f"0x{value:02x}"
                         solution["mems"] = solu_mems
-                        payl = payloads.get(inst_cnt, {})
+                        payl = payloads.get(cnt_inst, {})
                         payl_mems = payl.get("mems", {})
-                        payl_mems[f"0x{mem_addr:08x}"] = [f"0x{value:02x}", info]
+                        payl_mems[f"0x{mem_addr:08x}"] = [f"0x{value:02x}", mode, func, var_name, var_offs]
                         payl["mems"] = payl_mems
-                        payloads[inst_cnt] = payl
-                        self._logger.debug(f"\t0x{mem_addr:08x}: 0x{value:02x} [INST:{inst_cnt:d}, {info:s}]", color="green")
+                        payloads[cnt_inst] = payl
+                        self._logger.debug(f"\t0x{mem_addr:08x}: 0x{value:02x} [inst:{cnt_inst:d}][mem][{mode:s}:{func:s}][var:{var_name:s}+{var_offs:d}]", color="green")
             else:
-                self._logger.debug(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' has no precondittions.")
+                self._logger.debug(f"Instruction {element_id:d} of ROP chain '{rop_chain:s}' has no preconditions.")
             self._logger.info(f"... finished solving preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'.")
             # Concretize preconditions
             self._logger.info(f"Start concretizing preconditions of instruction {element_id:d} in ROP chain '{rop_chain:s}'...")
@@ -190,7 +189,6 @@ class ROPGenerator(Executor):
         Store trace file and included ROP chain.
         """
         self._logger.info(f"Start storing file '{trace_file:s}'...")
-        # self._recorder._trace[rop_chain] = self._rop_chain
         self._recorder._trace["ropchains"][rop_chain] = self._rop_chain
         self._recorder.store(trace_file)
         self._logger.info(f"... finished storing file '{trace_file:s}'.")
@@ -208,32 +206,28 @@ class ROPGenerator(Executor):
         self._logger.info("Start dumping payloads...")
         uppercase_letter_idx = 0
         for trace_inst_idx, payload in payloads.items():
-            mod = None
-            fun = None
-            var = None
-            off = None
+            m = None
+            f = None
+            n = None
+            o = None
             # Process register payload
             reg_pay = []
             regs = payload.get("regs", {})
             for i, reg_name in enumerate(sorted(regs.keys())):
-                reg_value, reg_info = regs[reg_name]
-                match = re.match(f"^([^:]+):([^:]+):([^\+]+)\+([0-9]+)$", reg_info)
-                if not match:
-                    self._logger.warning(f"Info of register '{reg_name:s}' could not be parsed.")
-                    self._logger.warning(f"Payload [INST:{trace_inst_idx:d}] might be incorrect!")
-                    continue
+                reg_value, mode, func, var_name, var_offs = regs[reg_name]
                 if i == 0:
-                    mod, fun, var, off = match.groups()
-                    off = int(off, base=10)
-                    self._logger.info(f"Payload [INST:{trace_inst_idx:d}][REG][{mod:s}][{fun:s}:{var:s}]", color="green", print_raw=True)
+                    m = mode
+                    f = func
+                    n = var_name
+                    o = var_offs
+                    self._logger.info(f"Payload [inst:{trace_inst_idx:d}][reg][{m:s}:{f:s}][var:{n:s}+0]:", color="green", print_raw=True)
                 else:
-                    _mod, _fun, _var, _off = match.groups()
-                    off = int(_off, base=10)
-                    if _mod != mod or _fun != fun or _var != var:
+                    o = var_offs
+                    if m != mode or f != func or n != var_name:
                         self._logger.warning(f"Info of register '{reg_name:s}' is inconsistent.")
                         self._logger.warning(f"Payload [INST:{trace_inst_idx:d}] might be incorrect!")
-                if off != len(reg_pay):
-                    reg_pay.extend([get_uppercase_letter_as_hex(uppercase_letter_idx)] * (off-len(reg_pay)))
+                if o != len(reg_pay):
+                    reg_pay.extend([get_uppercase_letter_as_hex(uppercase_letter_idx)] * (o-len(reg_pay)))
                     uppercase_letter_idx = (uppercase_letter_idx+1) % 26
                 reg_pay.append(reg_value[2:])
             # Print register payload
@@ -246,31 +240,27 @@ class ROPGenerator(Executor):
             mem_pay = []
             mems = payload.get("mems", {})
             for i, mem_addr in enumerate(sorted(mems.keys())):
-                mem_value, mem_info = mems[mem_addr]
-                match = re.match(f"^([^:]+):([^:]+):([^\+]+)\+([0-9]+)$", mem_info)
-                if not match:
-                    self._logger.warning(f"Info of memory '{mem_addr:s}' could not be parsed.")
-                    self._logger.warning(f"Payload [INST:{trace_inst_idx:d}] might be incorrect!")
-                    continue
+                mem_value, mode, func, var_name, var_offs = mems[mem_addr]
                 if i == 0:
-                    mod, fun, var, off = match.groups()
-                    off = int(off, base=10)
-                    self._logger.info(f"Payload [INST:{trace_inst_idx:d}][MEM][{mod:s}][{fun:s}:{var:s}]", color="green", print_raw=True)
+                    m = mode
+                    f = func
+                    n = var_name
+                    o = var_offs
+                    self._logger.info(f"Payload [inst:{trace_inst_idx:d}][mem][{m:s}:{f:s}][var:{n:s}+0]:", color="green", print_raw=True)
                 else:
-                    _mod, _fun, _var, _off = match.groups()
-                    off = int(_off, base=10)
-                    if _mod != mod or _fun != fun or _var != var:
+                    o = var_offs
+                    if m != mode or f != func or n != var_name:
                         self._logger.warning(f"Info of memory '{mem_addr:s}' is inconsistent.")
                         self._logger.warning(f"Payload [INST:{trace_inst_idx:d}] might be incorrect!")
-                if off != len(mem_pay):
-                    mem_pay.extend([get_uppercase_letter_as_hex(uppercase_letter_idx)] * (off-len(mem_pay)))
+                if o != len(mem_pay):
+                    mem_pay.extend([get_uppercase_letter_as_hex(uppercase_letter_idx)] * (o-len(mem_pay)))
                     uppercase_letter_idx = (uppercase_letter_idx+1) % 26
                 mem_pay.append(mem_value[2:])
             # Print memory payload
             byte_groups = [mem_pay[b:b+bytes_per_line] for b in range(0, len(mem_pay), bytes_per_line)]
             if len(byte_groups) > 0:
-                for byte_group in byte_groups:
-                    self._logger.info(f"{' '.join(byte_group):s}", color="green", print_raw=True)
+                for i, byte_group in enumerate(byte_groups):
+                    self._logger.info(f"{n:s}+{i*bytes_per_line:04d}: {' '.join(byte_group):s}", color="green", print_raw=True)
                 self._logger.info("---", color="green", print_raw=True)
         self._logger.info("... finished dumping payloads.")
         return

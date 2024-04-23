@@ -5,8 +5,6 @@ import importlib
 import inspect
 import os
 import pkgutil
-import re
-import string
 import sys
 from   morion.interact                      import Shell
 from   morion.log                           import Logger

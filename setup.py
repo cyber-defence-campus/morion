@@ -2,13 +2,13 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'morion',
-    version = '0.1.1',
+    version = '0.1.2',
     packages = find_packages(include = ['morion', 'morion.*']),
     install_requires = [
-        'termcolor==2.3.0',
+        'ipython==8.23.0',
         'keystone-engine==0.9.2',
-        'PyYAML==6.0',
-        'ipython==7.34.0'
+        'PyYAML==6.0.1',
+        'termcolor==2.4.0'
     ],
     entry_points = {
         'console_scripts': [

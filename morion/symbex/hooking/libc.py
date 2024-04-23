@@ -8,6 +8,11 @@ from   morion.symbex.hooking.lib   import inst_hook
 from   triton                      import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
 
+# TODO:
+# - Unify model/taint info string
+#   - [ ] symbolizeRegister
+#   - [ ] symbolizeMemory
+#   - [X] create_symvar_alias
 
 class fgets(inst_hook):
 
@@ -54,7 +59,13 @@ class fgets(inst_hook):
                     if len(s_) > 0:
                         for i in range(self.n-1):
                             mem = MemoryAccess(s+i, CPUSIZE.BYTE)
-                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=s+i, info=f"MODEL:fgets@libc:s+{i:d}"))
+                            alias = SymbexHelper.create_symvar_alias(
+                                mem_addr=s+i,
+                                var_name="s", var_offs=i,
+                                mode=self._mode,
+                                func=f"fgets@libc(s=0x{s:x},n={self.n:d},stream=0x{self.stream:x})"
+                            )
+                            ctx.symbolizeMemory(mem, alias)
                             if not cut or i == 0:
                                 self._logger.debug(f"\t0x{s+i:08x} = $$")
                             elif i == self.n-2:
@@ -116,8 +127,13 @@ class memcmp(inst_hook):
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
+                        alias = SymbexHelper.create_symvar_alias(
+                            reg_name="r0",
+                            mode=self._mode,
+                            func=f"memcmp@libc(s1=0x{self.s1:x},s2=0x{self.s2},n={self.n:d})"
+                        )
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:memcmp@libc"))
+                        ctx.symbolizeRegister(ctx.registers.r0, alias)
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -227,12 +243,22 @@ class memcpy(inst_hook):
                         for i in range(self.n):
                             mem_addr = self.dest+i
                             mem = MemoryAccess(mem_addr, CPUSIZE.BYTE)
+                            alias = SymbexHelper.create_symvar_alias(
+                                mem_addr=mem_addr,
+                                mode=self._mode,
+                                func=f"memcpy@libc(dest=0x{self.dest:x},src=0x{self.src:x},n={self.n:d})"
+                            )
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=mem_addr, info=f"TAINT:memcpy@libc:dest+{i:d}"))
+                            ctx.symbolizeMemory(mem, alias)
                             self._logger.debug(f"\tdest[{i:d}] = TAINT:memcpy@libc")
                     if self._taint_result:
+                        alias = SymbexHelper.create_symvar_alias(
+                            reg_name="r0",
+                            mode=self._mode,
+                            func=f"memcpy@libc(dest=0x{self.dest:x},src=0x{self.src:x},n={self.n:d})"
+                        )
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:memcpy@libc"))
+                        ctx.symbolizeRegister(ctx.registers.r0, alias)
                         self._logger.debug(f"\tresult      = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -485,7 +511,9 @@ class sscanf(inst_hook):
                                     ast_arg_j = ast.select(ast_arg, j)
                                     alias = SymbexHelper.create_symvar_alias(
                                         mem_addr=arg_ptr+j,
-                                        info=f"MODEL:sscanf@libc:arg{c:d}+{j:d}"
+                                        var_name=f"arg{c:d}", var_offs=j,
+                                        mode=self._mode,
+                                        func=f"sscanf@libc(str=0x{self.str:x},format=0x{self.format:x},...)"
                                     )
                                     sym_exp = ctx.newSymbolicExpression(ast_arg_j, alias)
                                     if sym_exp:
@@ -633,8 +661,13 @@ class strlen(inst_hook):
                 # Taint mode
                 if self._mode == "taint":
                     if self._taint:
+                        alias = SymbexHelper.create_symvar_alias(
+                            reg_name="r0",
+                            mode=self._mode,
+                            func=f"strlen@libc(s=0x{self.s:x})"
+                        )
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:strlen@libc"))
+                        ctx.symbolizeRegister(ctx.registers.r0, alias)
                         self._logger.debug(f"\tresult = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
@@ -713,11 +746,22 @@ class strtol(inst_hook):
                     if self._taint:
                         if self.endptr:
                             mem = MemoryAccess(self.endptr, CPUSIZE.DWORD)
+                            alias = SymbexHelper.create_symvar_alias(
+                                mem_addr=self.endptr,
+                                var_name="endptr",
+                                mode=self._mode,
+                                func=f"strtol@libc(nptr=0x{self.nptr:x},endptr=0x{self.endptr:x},base={self.base:d})"
+                            )
                             ctx.concretizeMemory(mem)
-                            ctx.symbolizeMemory(mem, SymbexHelper.create_symvar_alias(mem_addr=self.endptr, info="TAINT:strtol@libc:endptr"))
+                            ctx.symbolizeMemory(mem, alias)
                             self._logger.debug(f"\t *endptr = [TAINTED]")
+                        alias = SymbexHelper.create_symvar_alias(
+                            reg_name="r0",
+                            mode=self._mode,
+                            func=f"strtol@libc(nptr=0x{self.nptr:x},endptr=0x{self.endptr:x},base={self.base:d})"
+                        )
                         ctx.concretizeRegister(ctx.registers.r0)
-                        ctx.symbolizeRegister(ctx.registers.r0, SymbexHelper.create_symvar_alias(reg_name="r0", info="TAINT:strtol@libc"))
+                        ctx.symbolizeRegister(ctx.registers.r0, alias)
                         self._logger.debug(f"\t  result = [TAINTED]")
                 # Model mode
                 elif self._mode == "model":
