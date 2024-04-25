@@ -31,7 +31,7 @@ class Shell:
             "- " + key for key in kwargs.keys()
         ] + [
             "",
-            "Type quit(), exit() or ctrl-d to leave the interpreter."
+            "Type quit(), exit() or CTRL-d to leave the interpreter."
         ]
         entry_msg = "\n".join(entry_msg)
         print(entry_msg)
@@ -50,7 +50,8 @@ class Shell:
             except SystemExit:
                 pass
         else:
-            # Use IPython interpereter
-            IPython.start_ipython(argv=[], display_banner=False, user_ns=ns)
+            # Use IPython interpreter
+            console = IPython.terminal.embed.InteractiveShellEmbed(argv=[], display_banner=False, user_ns=ns)
+            console()
 
         return
