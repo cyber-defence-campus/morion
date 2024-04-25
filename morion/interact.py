@@ -31,7 +31,7 @@ class Shell:
             "- " + key for key in kwargs.keys()
         ] + [
             "",
-            "Type quit(), exit() or CTRL-d to leave the interpreter."
+            "Type quit, exit or CTRL-d to leave the interpreter."
         ]
         entry_msg = "\n".join(entry_msg)
         print(entry_msg)
