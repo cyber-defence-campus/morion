@@ -8,11 +8,6 @@ from   morion.symbex.hooking.lib   import inst_hook
 from   triton                      import ARCH, CPUSIZE, MemoryAccess, TritonContext
 import re
 
-# TODO:
-# - Unify model/taint info string
-#   - [ ] symbolizeRegister
-#   - [ ] symbolizeMemory
-#   - [X] create_symvar_alias
 
 class fgets(inst_hook):
 
