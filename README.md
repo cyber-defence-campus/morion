@@ -30,6 +30,8 @@ The following figure provides a high-level overview about *Morion* and its two m
   <img src="./images/Morion_Overview.svg" alt="Morion Overview"/>
 </figure>
 
+**Disclaimer**: TODO
+
 ## Installation
 **Note**: The following installation instructions have only been tested on Ubuntu 20.04/22.04 LTS.
 ### Triton
@@ -116,3 +118,5 @@ morion_path_analyzer    -h  # Use symbolic execution to analyze paths
 morion_backward_slicer  -h  # Use symbolic execution to calculate backward slices
 morion_rop_generator    -h  # Use symbolic execution to generate a ROP chain
 ```
+### Example
+- [Exploiting a Stack Buffer Overflow on the NETGEAR R6700v3 (CVE-2022-27646) with the Help of Symbolic Execution](https://github.com/pdamian/netgear_r6700v3_circled)
