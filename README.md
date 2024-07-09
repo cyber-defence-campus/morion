@@ -10,7 +10,7 @@
 research current limitations that this technique has when it comes to **real-world binaries**.
 *Morion* relies on [Triton](https://triton-library.github.io/) as its underlying symbolic execution
 engine and (currently) has the following features / limitations:
-- **Record** concrete execution traces of a target binary (potentially in cross-platform remote setups)
+- **Record** concrete execution traces of a target binary (optionally in cross-platform remote setups)
   - Record initial context (concrete initial values of all registers / memory cells accessed during the trace)
   - Record sequence of assembly instructions (executed by the trace)
   - Hooking / skipping of instruction sequences or functions
