@@ -1,6 +1,4 @@
 # Morion
-<!--TODO--------------------------------------------------------------------------------------------
---------------------------------------------------------------------------------------------------->
 
 <p align="center">
   <img src="./images/Morion_Logo.svg" alt="Morion Logo"/>
@@ -29,8 +27,6 @@ The following figure provides a high-level overview about *Morion* and its two m
 <figure>
   <img src="./images/Morion_Overview.svg" alt="Morion Overview"/>
 </figure>
-
-**Disclaimer**: TODO
 
 ## Installation
 **Note**: The following installation instructions have only been tested on Ubuntu 20.04/22.04 LTS.
