@@ -66,7 +66,7 @@ sudo apt install gdb gdb-multiarch
 #### Morion
 1. Clone the repository:
     ```shell
-    git clone https://github.com/pdamian/morion.git && cd morion/
+    git clone https://github.com/cyber-defence-campus/morion.git && cd morion/
     ```
 2. Use a Python virtual enviroment (optional, but recommended):
     - GDB uses the system-installed Python interpreter and the corresponding site-packages, even when using a Python virtual environment. In order to fix that, add the following to your `.gdbinit` file:    
@@ -119,6 +119,6 @@ morion_backward_slicer  -h  # Use symbolic execution to calculate backward slice
 morion_rop_generator    -h  # Use symbolic execution to generate a ROP chain
 ```
 ### Example
-- [Exploiting a Stack Buffer Overflow on the NETGEAR R6700v3 (CVE-2022-27646) with the Help of Symbolic Execution](https://github.com/pdamian/netgear_r6700v3_circled)
+- [Exploiting a Stack Buffer Overflow on the NETGEAR R6700v3 (CVE-2022-27646) with the Help of Symbolic Execution](https://github.com/cyber-defence-campus/netgear_r6700v3_circled)
 ## Authors
 - [Damian Pfammatter](https://github.com/pdamian), [Cyber-Defense Campus (armasuisse S+T)](https://www.cydcampus.admin.ch/)
