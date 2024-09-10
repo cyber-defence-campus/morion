@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'morion',
-    version = '0.1.2',
+    version = '0.1.5',
     packages = find_packages(include = ['morion', 'morion.*']),
     install_requires = [
         'ipython==8.23.0',
