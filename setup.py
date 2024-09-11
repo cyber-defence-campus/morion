@@ -3,6 +3,8 @@ from setuptools import setup, find_packages
 setup(
     name = 'morion',
     version = '0.1.5',
+    author = 'Damian Pfammatter',
+    description = 'Morion is a PoC tool to experiment with symbolic execution on real-world (ARMv7) binaries.',
     packages = find_packages(include = ['morion', 'morion.*']),
     install_requires = [
         'ipython==8.23.0',
