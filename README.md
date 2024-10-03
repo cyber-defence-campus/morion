@@ -1,4 +1,5 @@
 [![Publish Release](https://github.com/cyber-defence-campus/morion/actions/workflows/release.yml/badge.svg)](https://github.com/cyber-defence-campus/morion/actions/workflows/release.yml)
+[![Release](https://img.shields.io/github/v/release/cyber-defence-campus/morion)](https://img.shields.io/github/v/release/cyber-defence-campus/morion)
 # Morion
 
 <p align="center">
