@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name = 'morion',
-    version = '0.1.5',
+    version = '0.1.6',
     author = 'Damian Pfammatter',
     description = 'Morion is a PoC tool to experiment with symbolic execution on real-world (ARMv7) binaries.',
     packages = find_packages(include = ['morion', 'morion.*']),
